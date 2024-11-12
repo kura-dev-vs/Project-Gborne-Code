@@ -13,11 +13,19 @@ namespace RK
         public static WorldCharacterEffectsManager instance;
         [Header("VFX")]
         public GameObject bloodSplatterVFX;
+        public GameObject criticalBloodSplatterVFX;
         public GameObject healVFX;
         [Header("Damage")]
         public TakeDamageEffect takeDamageEffect;
+        public TakeBlockDamageEffect takeBlockDamageEffect;
+        public TakeCriticalDamageEffect takeCriticalDamageEffect;
+        [Header("PowerUps")]
+        public PowerUpsEffect powerUpsEffect;
+        [Header("Instant Effects")]
         [SerializeField] List<InstantCharacterEffect> instantEffects;
 
+        [Header("StaticEffects")]
+        [SerializeField] List<StaticCharacterEffect> staticEffects;
         [Header("Heal")]
         public TakeHealEffect takeHealEffect;
         [Header("Energy")]
@@ -40,6 +48,10 @@ namespace RK
             for (int i = 0; i < instantEffects.Count; i++)
             {
                 instantEffects[i].instantEffectID = i;
+            }
+            for (int i = 0; i < staticEffects.Count; i++)
+            {
+                staticEffects[i].staticEffectID = i;
             }
         }
     }

@@ -22,7 +22,23 @@ namespace RK
         public bool applyRootMotion = false;
         [Header("Damage Animations")]
         public string lastDamageAnimationPlayed;
-        [Header("Damage Animations")]
+        // ping hit 
+        [SerializeField] private string hit_Forward_Ping_01 = "hit_Forward_Ping_01";
+        [SerializeField] private string hit_Forward_Ping_02 = "hit_Forward_Ping_02";
+        [SerializeField] private string hit_Backward_Ping_01 = "hit_Backward_Ping_01";
+        [SerializeField] private string hit_Backward_Ping_02 = "hit_Backward_Ping_02";
+        [SerializeField] private string hit_Left_Ping_01 = "hit_Left_Ping_01";
+        [SerializeField] private string hit_Left_Ping_02 = "hit_Left_Ping_02";
+        [SerializeField] private string hit_Right_Ping_01 = "hit_Right_Ping_01";
+        [SerializeField] private string hit_Right_Ping_02 = "hit_Right_Ping_02";
+
+        public List<string> forward_Ping_Damage = new List<string>();
+        public List<string> backward_Ping_Damage = new List<string>();
+        public List<string> left_Ping_Damage = new List<string>();
+        public List<string> right_Ping_Damage = new List<string>();
+
+
+        // medium hit
         [SerializeField] private string hit_Forward_Medium_01 = "hit_Forward_Medium_01";
         [SerializeField] private string hit_Forward_Medium_02 = "hit_Forward_Medium_02";
         [SerializeField] private string hit_Backward_Medium_01 = "hit_Backward_Medium_01";
@@ -47,6 +63,19 @@ namespace RK
         }
         protected virtual void Start()
         {
+            forward_Ping_Damage.Add(hit_Forward_Ping_01);
+            forward_Ping_Damage.Add(hit_Forward_Ping_02);
+
+            backward_Ping_Damage.Add(hit_Backward_Ping_01);
+            backward_Ping_Damage.Add(hit_Backward_Ping_02);
+
+            left_Ping_Damage.Add(hit_Left_Ping_01);
+            left_Ping_Damage.Add(hit_Left_Ping_02);
+
+            right_Ping_Damage.Add(hit_Right_Ping_01);
+            right_Ping_Damage.Add(hit_Right_Ping_02);
+
+
             forward_Medium_Damage.Add(hit_Forward_Medium_01);
             forward_Medium_Damage.Add(hit_Forward_Medium_02);
 
@@ -156,12 +185,32 @@ namespace RK
             // アニメーションの再生をサーバーに伝え他のクライアントも同じアニメーションを行う
             character.characterNetworkManager.NotifyTheServerOfActionAnimationServerRpc(NetworkManager.Singleton.LocalClientId, targetAnimation, applyRootMotion);
         }
-        public virtual void PlayTargetAttackActionAnimation(AttackType attackType,
-                string targetAnimation,
-                bool isPerformingAction,
-                bool applyRootMotion = true,
-                bool canRotate = true,
-                bool canMove = false)
+        public virtual void PlayTargetActionAnimationInstantly(
+            string targetAnimation,
+            bool isPerformingAction,
+            bool applyRootMotion = true,
+            bool canRotate = false,
+            bool canMove = false)
+        {
+            character.characterAnimatorManager.applyRootMotion = applyRootMotion;
+            character.animator.Play(targetAnimation);
+            character.characterCombatManager.lastAttackAnimationPerformed = targetAnimation;
+            character.isPerformingAction = isPerformingAction;
+            character.characterLocomotionManager.canRotate = canRotate;
+            character.characterLocomotionManager.canMove = canMove;
+            character.canDodge = !isPerformingAction;
+
+            // アニメーションの再生をサーバーに伝え他のクライアントも同じアニメーションを行う
+            character.characterNetworkManager.NotifyTheServerOfInstantActionAnimationServerRpc(NetworkManager.Singleton.LocalClientId, targetAnimation, applyRootMotion);
+        }
+        public virtual void PlayTargetAttackActionAnimation(
+            WeaponItem weapon,
+            AttackType attackType,
+            string targetAnimation,
+            bool isPerformingAction,
+            bool applyRootMotion = true,
+            bool canRotate = true,
+            bool canMove = false)
         {
             // attack typeを記録
             // コンボの場合最後に行ったアニメーションヵら次のアニメーションを選ぶので最後に行ったモーションを記録する
@@ -171,6 +220,7 @@ namespace RK
             character.characterAnimatorManager.applyRootMotion = applyRootMotion;
             character.animator.CrossFade(targetAnimation, 0.2f);
             character.characterCombatManager.lastAttackAnimationPerformed = targetAnimation;
+            UpdateAnimatorController(weapon.weaponAnimator);
             character.isPerformingAction = isPerformingAction;
             character.characterLocomotionManager.canRotate = canRotate;
             character.characterLocomotionManager.canMove = canMove;
@@ -180,7 +230,10 @@ namespace RK
             character.characterNetworkManager.NotifyTheServerOfAttackActionAnimationServerRpc(NetworkManager.Singleton.LocalClientId, targetAnimation, applyRootMotion);
         }
 
-        public virtual void PlayTargetSkillActionAnimation(AttackType attackType,
+
+        public virtual void PlayTargetSkillActionAnimation(
+            PlayableCharacter pc,
+            AttackType attackType,
             string targetAnimation,
             bool isPerformingAction,
             bool applyRootMotion = true,
@@ -190,6 +243,7 @@ namespace RK
             character.characterAnimatorManager.applyRootMotion = applyRootMotion;
             character.animator.CrossFade(targetAnimation, 0.2f);
             character.characterCombatManager.lastAttackAnimationPerformed = targetAnimation;
+            UpdateAnimatorController(pc.pcAnimator);
             character.isPerformingAction = isPerformingAction;
             character.characterLocomotionManager.canRotate = canRotate;
             character.characterLocomotionManager.canMove = canMove;
@@ -197,6 +251,10 @@ namespace RK
 
             // アニメーションの再生をサーバーに伝え他のクライアントも同じアニメーションを行う
             character.characterNetworkManager.NotifyTheServerOfActionAnimationServerRpc(NetworkManager.Singleton.LocalClientId, targetAnimation, applyRootMotion);
+        }
+        public void UpdateAnimatorController(AnimatorOverrideController weaponController)
+        {
+            character.animator.runtimeAnimatorController = weaponController;
         }
 
         public virtual void EnableCanDoCombo()
@@ -220,6 +278,16 @@ namespace RK
         {
             if (character.IsOwner)
                 character.characterNetworkManager.isInvulnerable.Value = false;
+        }
+        public void EnableIsParrying()
+        {
+            if (character.IsOwner)
+                character.characterNetworkManager.isParrying.Value = true;
+        }
+        public void DisableIsParrying()
+        {
+            if (character.IsOwner)
+                character.characterNetworkManager.isParrying.Value = false;
         }
         public void EnableCanDoRollingAttack()
         {

@@ -64,27 +64,40 @@ namespace RK
         }
         public override void InstantiationBullet()
         {
-            Transform leftWeaponTransform = player.playerEquipmentManager.leftHandWeaponModel.transform;
+            Transform weaponTransform;
+            WeaponItem rangedWeapon;
+            if (player.playerNetworkManager.isUsingRightHand.Value)
+            {
+                weaponTransform = player.playerEquipmentManager.rightHandWeaponModel.transform;
+                rangedWeapon = player.playerInventoryManager.currentRightHandWeapon;
+            }
+            else
+            {
+                weaponTransform = player.playerEquipmentManager.leftHandWeaponModel.transform;
+                rangedWeapon = player.playerInventoryManager.currentLeftHandWeapon;
+            }
+
             Vector3 bulletDirection;
             if (player.playerNetworkManager.isLockedOn.Value)
             {
                 Vector3 targetPosition = player.playerCombatManager.currentTarget.characterCombatManager.lockOnTransform.position;
-                bulletDirection = targetPosition - leftWeaponTransform.position;
+                bulletDirection = targetPosition - weaponTransform.position;
             }
             else
             {
                 bulletDirection = player.transform.forward;
             }
-
-            GameObject bullet = Instantiate(player.playerInventoryManager.currentLeftHandWeapon.bullet, leftWeaponTransform.position, player.transform.rotation);
-            bullet.GetComponent<BulletPrefabController>().bulletDirection = bulletDirection;
+            Quaternion rot = player.transform.rotation;
+            rot = Quaternion.Euler(90, 90, 0);
+            GameObject bullet = Instantiate(rangedWeapon.bullet, weaponTransform.position, rot);
             RangedWeaponDamageCollider bulletCllider = bullet.GetComponent<RangedWeaponDamageCollider>();
-            player.playerEquipmentManager.leftWeaponManager.SetRangedDamageCollider(bulletCllider, player, player.playerInventoryManager.currentLeftHandWeapon);
+            player.playerEquipmentManager.leftWeaponManager.SetRangedDamageCollider(bulletCllider, player, rangedWeapon);
+
+            bullet.GetComponent<BulletPrefabController>().bulletDirection = bulletDirection;
             if (player.IsOwner)
             {
-
                 int maxHealth = player.playerNetworkManager.maxHealth.Value;
-                float cp = maxHealth * player.playerInventoryManager.currentLeftHandWeapon.baseHPCostPct / 100;
+                float cp = maxHealth * rangedWeapon.baseHPCostPct / 100;
                 if (player.playerNetworkManager.currentHealth.Value < (int)Mathf.Ceil(cp))
                 {
                     player.playerNetworkManager.currentHealth.Value -= player.playerNetworkManager.currentHealth.Value - 1;

@@ -61,6 +61,15 @@ namespace RK
         {
             return spawnedInBosses.FirstOrDefault(boss => boss.bossID == ID);
         }
+        public void ResetAllCharacters()
+        {
+            DespawnALLCharacters();
+
+            foreach (var spawner in aiCharacterSpawners)
+            {
+                spawner.AttemptToSpawnCharacter();
+            }
+        }
         public void DespawnALLCharacters()
         {
             DisableAllCharacters();
@@ -70,6 +79,8 @@ namespace RK
                     continue;
                 character.GetComponent<NetworkObject>().Despawn();
             }
+            spawnedInCharacters.Clear();
+            spawnedInBosses.Clear();
         }
         private void DisableAllCharacters()
         {

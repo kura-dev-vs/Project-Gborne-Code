@@ -29,11 +29,11 @@ namespace RK
             }
             else
             {
-                if (entry.playableCharacterEntryNetworkManager.currentPTID.Count == PlayableCharacterInventoryManager.MaxPTCount)
+                if (entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList.Count == WorldPlayableCharacterDatabase.MaxPTCount)
                 {
-                    for (int i = 0; i < entry.playableCharacterInventoryManager.currentPCPT.Length; i++)
+                    for (int i = 0; i < WorldPlayableCharacterDatabase.MaxPTCount; i++)
                     {
-                        entry.playableCharacterInventoryManager.currentPCPT[i] = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(entry.playableCharacterEntryNetworkManager.currentPTID[i]);
+                        entry.playableCharacterInventoryManager.currentPCPT[i] = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList[i]);
                     }
                 }
             }
@@ -44,11 +44,7 @@ namespace RK
         /// アクティブキャラの変更時に呼び出される
         /// </summary>
         /// <param name="newManager"></param>
-        /// <param name="newCharacterModel"></param> <summary>
-        /// 
-        /// </summary>
-        /// <param name="newManager"></param>
-        /// <param name="newCharacterModel"></param>
+        /// <param name="newCharacterModel"></param> 
         private void LoadPlayableCharacter(PlayableCharacterManager newManager, GameObject newCharacterModel)
         {
             if (entry.playableCharacterInventoryManager.currentCharacter != null)
@@ -70,9 +66,9 @@ namespace RK
             GameObject loadNewCharacter;
             PlayableCharacterManager loadNewCharacterManager;
 
-            for (int i = 0; i < entry.playableCharacterInventoryManager.currentPCPT.Length; i++)
+            for (int i = 0; i < WorldPlayableCharacterDatabase.MaxPTCount; i++)
             {
-                if (entry.playableCharacterInventoryManager.currentPCPT[i].playableCharacterID != WorldPlayableCharacterDatabase.instance.NoCharacter.playableCharacterID)
+                if (entry.playableCharacterInventoryManager.currentPCPT[i].pcID != WorldPlayableCharacterDatabase.instance.NoCharacter.pcID)
                 {
                     playableCharacter = entry.playableCharacterInventoryManager.currentPCPT[i];
                     loadNewCharacter = Instantiate(playableCharacter.characterModel);
@@ -88,8 +84,8 @@ namespace RK
                         playableCharacterManager = loadNewCharacterManager;
                         if (entry.IsOwner)
                         {
-                            entry.playableCharacterEntryNetworkManager.currentPlayableCharacterID.Value = playableCharacter.playableCharacterID;
-                            PlayerUIManager.instance.playerUIHudManager.SetCharacterSlotUI(i, entry.playableCharacterInventoryManager.currentPCPT[i].playableCharacterID);
+                            entry.playableCharacterEntryNetworkManager.currentPlayableCharacterID.Value = playableCharacter.pcID;
+                            PlayerUIManager.instance.playerUIHudManager.SetCharacterSlotUI(i, entry.playableCharacterInventoryManager.currentPCPT[i].pcID);
                         }
                     }
                     else
@@ -97,7 +93,7 @@ namespace RK
                         entry.playableCharacterInventoryManager.SetActivePlayableCharacter(false, loadNewCharacter);
                         if (entry.IsOwner)
                         {
-                            PlayerUIManager.instance.playerUIHudManager.SetCharacterSlotUI(i, entry.playableCharacterInventoryManager.currentPCPT[i].playableCharacterID);
+                            PlayerUIManager.instance.playerUIHudManager.SetCharacterSlotUI(i, entry.playableCharacterInventoryManager.currentPCPT[i].pcID);
                         }
                     }
                     characterCount += 1;
@@ -132,7 +128,8 @@ namespace RK
             player.rightSkillManager = playableCharacterModel.GetComponent<RightSkillManager>();
             player.leftSkillManager = playableCharacterModel.GetComponent<LeftSkillManager>();
             player.playerBurstManager = playableCharacterModel.GetComponent<PlayerBurstManager>();
-            //player.playerStatsManager = playableCharacterModel.GetComponent<PlayerStatsManager>();
+            player.characterStatsManager = playableCharacterModel.GetComponent<PlayerStatsManager>();
+            player.playerStatsManager = playableCharacterModel.GetComponent<PlayerStatsManager>();
         }
 
         /// <summary>
@@ -205,13 +202,14 @@ namespace RK
         /// </summary>
         private void SetCurrentPTIDList()
         {
-            for (int i = 0; i < entry.playableCharacterInventoryManager.currentPCPT.Length; i++)
+            for (int i = 0; i < WorldPlayableCharacterDatabase.MaxPTCount; i++)
             {
                 if (entry.playableCharacterInventoryManager.currentPCPT[i] == null)
                 {
                     entry.playableCharacterInventoryManager.currentPCPT[i] = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(0);
                 }
-                entry.playableCharacterEntryNetworkManager.currentPTID.Add(entry.playableCharacterInventoryManager.currentPCPT[i].playableCharacterID);
+                entry.playableCharacterInventoryManager.currentPCPT[i] = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(entry.playableCharacterEntryNetworkManager.currentPTIDForSaveAndLoad[i]);
+                entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList.Add(entry.playableCharacterInventoryManager.currentPCPT[i].pcID);
             }
         }
     }

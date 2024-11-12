@@ -16,13 +16,13 @@ namespace RK
         EntryManager entry;
         PlayableCharacterManager playableCharacterManager;
         public PlayableCharacter playableCharacter;
-        PCBurst burst;
+        [HideInInspector] public PCBurst burst;
         float recastTimeBurst;
         public float currentRecastBurst;
-        public bool nowRecastingBurst = false;
+        public bool nowRecasting = false;
         public float rechargeEnergy;
         public float currentEnergy;
-        bool chargedBurst = false;
+        public bool chargedBurst = false;
         private void Start()
         {
             player = GetComponentInParent<PlayerManager>();
@@ -48,13 +48,13 @@ namespace RK
         }
         private void FixedUpdate()
         {
-            if (nowRecastingBurst)
+            if (nowRecasting)
             {
                 currentRecastBurst -= 1f * Time.deltaTime;
             }
             if (currentRecastBurst <= 0)
             {
-                nowRecastingBurst = false;
+                nowRecasting = false;
                 currentRecastBurst = recastTimeBurst;
             }
         }

@@ -5,11 +5,10 @@ using UnityEngine;
 namespace RK
 {
     /// <summary>
-    /// 
+    /// PTに含まれるPCの管理、アクセスを行う
     /// </summary>
     public class PlayableCharacterInventoryManager : MonoBehaviour
     {
-        [HideInInspector] public const int MaxPTCount = 4;
         EntryManager entry;
         public PlayableCharacter currentCharacter;
         [Header("Quick Slots")]
@@ -19,6 +18,13 @@ namespace RK
         {
             entry = GetComponent<EntryManager>();
         }
+
+        /// <summary>
+        /// 引数modelに該当する子オブジェクトのPCモデルのアニメーターコンポ―ネントやモデル自身をresultの値にする。
+        /// trueの場合はアクティブ状態に、falseの場合は非アクティブ状態に
+        /// </summary>
+        /// <param name="result"></param>
+        /// <param name="model"></param> 
         public void SetActivePlayableCharacter(bool result, GameObject model)
         {
             if (model != null)
@@ -34,7 +40,7 @@ namespace RK
 
         /// <summary>
         /// 引数のmodelをアクティブキャラにする際に呼び出される
-        /// instantiation
+        /// 3DモデルをVsctor3.zeroの位置に置く
         /// </summary>
         /// <param name="characterModel"></param>
         public void PositioningCharacterModel(GameObject characterModel)
@@ -44,14 +50,22 @@ namespace RK
             characterModel.transform.localRotation = Quaternion.identity;
         }
 
-
+        /// <summary>
+        /// PlayerInputManagerの入力に応じた番号に位置するPCに切り替える際の経由メソッド
+        /// </summary>
+        /// <param name="slotsIndex"></param>
         public void ChangeCharacter(int slotsIndex)
         {
-            int newCharacterID = entry.playableCharacterEntryNetworkManager.currentPTID[slotsIndex];
-            if (newCharacterID == WorldPlayableCharacterDatabase.instance.NoCharacter.playableCharacterID)
+            int newCharacterID = entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList[slotsIndex];
+            if (newCharacterID == WorldPlayableCharacterDatabase.instance.NoCharacter.pcID)
                 return;
             entry.playableCharacterEntryManager.FindCharacterByIDFromChildren(newCharacterID);
         }
+
+        /// <summary>
+        /// PTをリフレッシュする際に一度全てのPCオブジェクトを削除するために使用
+        /// </summary>
+        /// <param name="root"></param>
         private void DestroyChildAll(Transform root)
         {
             foreach (Transform child in root)
@@ -59,19 +73,23 @@ namespace RK
                 Destroy(child.gameObject);
             }
         }
+
+        /// <summary>
+        /// PTをリフレッシュする際に使用。
+        /// PTPCのネットワーク変数リストに適したPCにcurrentPCPTを入れ替える
+        /// </summary>
         public void RefreshDeployedPT()
         {
             DestroyChildAll(transform);
-            for (int i = 0; i < entry.playableCharacterEntryNetworkManager.currentPTID.Count; i++)
+            for (int i = 0; i < entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList.Count; i++)
             {
-                entry.playableCharacterInventoryManager.currentPCPT[i] = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(entry.playableCharacterEntryNetworkManager.currentPTID[i]);
+                entry.playableCharacterInventoryManager.currentPCPT[i] = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList[i]);
             }
 
             if (entry.player.IsOwner)
             {
                 entry.playableCharacterEntryNetworkManager.resetPTFire.Value = true;
             }
-
 
             entry.playableCharacterEntryManager.SetFirstCharacter();
 

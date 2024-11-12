@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Unity.VisualScripting;
-using UnityEditor.SearchService;
-using UnityEditor.ShaderGraph;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
@@ -17,6 +15,7 @@ namespace RK
     /// </summary>
     public class PlayerManager : CharacterManager
     {
+        // PlayerManager player = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerManager>();
         [Header("DEBUG MENU")]
         [HideInInspector] public EntryManager entry;
         public bool respawnCharacter = false;
@@ -25,12 +24,15 @@ namespace RK
         [HideInInspector] public PlayerLocomotionManager playerLocomotionManager;
         [HideInInspector] public PlayerNetworkManager playerNetworkManager;
         [HideInInspector] public PlayerStatsManager playerStatsManager;
-        [HideInInspector] public PlayerInventoryManager playerInventoryManager;
+        public PlayerInventoryManager playerInventoryManager;
         [HideInInspector] public PlayerEquipmentManager playerEquipmentManager;
         [HideInInspector] public RightSkillManager rightSkillManager;
         [HideInInspector] public LeftSkillManager leftSkillManager;
         [HideInInspector] public PlayerBurstManager playerBurstManager;
+        [HideInInspector] public PlayerInteractionManager playerInteractionManager;
+        [HideInInspector] public PlayerEffectsManager playerEffectsManager;
         public PlayerCombatManager playerCombatManager;
+        public Inventory inventory;
         protected override void Awake()
         {
             base.Awake();
@@ -45,6 +47,9 @@ namespace RK
             rightSkillManager = GetComponent<RightSkillManager>();
             leftSkillManager = GetComponent<LeftSkillManager>();
             playerBurstManager = GetComponent<PlayerBurstManager>();
+            playerInteractionManager = GetComponent<PlayerInteractionManager>();
+            playerEffectsManager = GetComponent<PlayerEffectsManager>();
+            inventory = GetComponent<Inventory>();
         }
         protected override void Update()
         {
@@ -58,7 +63,7 @@ namespace RK
             playerLocomotionManager.HandleAllMovement();
 
             // スタミナの回復
-            playerStatsManager.RegenerateStamina();
+            playerLocomotionManager.RegenerateStamina();
 
             // スキル、爆発関連のUIHud表示を実行している (UI管理だけなのでリキャストは別のマネージャーで行っている)
             SetRecastSkillBurst();
@@ -96,7 +101,7 @@ namespace RK
                 // スタミナや体力の変化時にローカルプレイヤーuiも変化させる
                 playerNetworkManager.currentHealth.OnValueChanged += PlayerUIManager.instance.playerUIHudManager.SetNewHealthValue;
                 playerNetworkManager.currentStamina.OnValueChanged += PlayerUIManager.instance.playerUIHudManager.SetNewStaminaValue;
-                //playerNetworkManager.currentStamina.OnValueChanged += playerStatsManager.ResetStaminaRegenTimer;
+                playerNetworkManager.currentStamina.OnValueChanged += playerLocomotionManager.ResetStaminaRegenTimer;
             }
 
             // Stats
@@ -108,6 +113,8 @@ namespace RK
             playerNetworkManager.currentRightHandWeaponID.OnValueChanged += playerNetworkManager.OnCurrentRightHandWeaponIDChange;
             playerNetworkManager.currentLeftHandWeaponID.OnValueChanged += playerNetworkManager.OnCurrentLeftHandWeaponIDChange;
             playerNetworkManager.currentWeaponBeingUsed.OnValueChanged += playerNetworkManager.OnCurrentWeaponBeingUsedIDChange;
+            playerNetworkManager.isBlocking.OnValueChanged += playerNetworkManager.OnIsBlockingChanged;
+            playerNetworkManager.isPowerUps.OnValueChanged += playerNetworkManager.OnInPowerUpsChanged;
             // Flags
             playerNetworkManager.isChargingAttack.OnValueChanged += playerNetworkManager.OnIsChargingAttackChanged;
 
@@ -132,7 +139,7 @@ namespace RK
 
                 playerNetworkManager.currentHealth.OnValueChanged -= PlayerUIManager.instance.playerUIHudManager.SetNewHealthValue;
                 playerNetworkManager.currentStamina.OnValueChanged -= PlayerUIManager.instance.playerUIHudManager.SetNewStaminaValue;
-                //playerNetworkManager.currentStamina.OnValueChanged -= playerStatsManager.ResetStaminaRegenTimer;
+                playerNetworkManager.currentStamina.OnValueChanged -= playerLocomotionManager.ResetStaminaRegenTimer;
             }
 
             // Stats
@@ -144,6 +151,7 @@ namespace RK
             playerNetworkManager.currentRightHandWeaponID.OnValueChanged -= playerNetworkManager.OnCurrentRightHandWeaponIDChange;
             playerNetworkManager.currentLeftHandWeaponID.OnValueChanged -= playerNetworkManager.OnCurrentLeftHandWeaponIDChange;
             playerNetworkManager.currentWeaponBeingUsed.OnValueChanged -= playerNetworkManager.OnCurrentWeaponBeingUsedIDChange;
+            playerNetworkManager.isBlocking.OnValueChanged -= playerNetworkManager.OnIsBlockingChanged;
             // Flags
             playerNetworkManager.isChargingAttack.OnValueChanged -= playerNetworkManager.OnIsChargingAttackChanged;
 
@@ -214,12 +222,96 @@ namespace RK
 
             currentCharacterData.vitality = playerNetworkManager.vitality.Value;
             currentCharacterData.endurance = playerNetworkManager.endurance.Value;
+
+            for (int i = 0; i < currentCharacterData.ptID.Length; i++)
+            {
+                currentCharacterData.ptID[i] = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<EntryManager>().playableCharacterEntryNetworkManager.currentPTIDForSaveAndLoad[i];
+            }
+
+            for (int i = 1; i < WorldPlayableCharacterDatabase.instance.GetPlayableCharacterCount(); i++)
+            {
+                // セーブデータにpcの情報が入っていない場合、デフォルト値で保存
+                if (!currentCharacterData.pcRightWeapon.ContainsKey(i))
+                {
+                    currentCharacterData.pcRightWeapon.Add(i, WorldItemDatabase.instance.unarmedWeapon.itemID);
+                    currentCharacterData.pcLeftWeapon.Add(i, WorldItemDatabase.instance.unarmedWeapon.itemID);
+
+                    currentCharacterData.pcHatOutfit.Add(i, -1);
+                    currentCharacterData.pcJacketOutfit.Add(i, -1);
+                    currentCharacterData.pcTopsOutfit.Add(i, -1);
+                    currentCharacterData.pcBottomsOutfit.Add(i, -1);
+                    currentCharacterData.pcShoesOutfit.Add(i, -1);
+
+                }
+                // セーブデータにpcの情報が入っている場合、現在の情報を保存
+                else
+                {
+                    currentCharacterData.pcRightWeapon.Remove(i);
+                    currentCharacterData.pcLeftWeapon.Remove(i);
+
+                    currentCharacterData.pcHatOutfit.Remove(i);
+                    currentCharacterData.pcJacketOutfit.Remove(i);
+                    currentCharacterData.pcTopsOutfit.Remove(i);
+                    currentCharacterData.pcBottomsOutfit.Remove(i);
+                    currentCharacterData.pcShoesOutfit.Remove(i);
+
+
+                    if (WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).rightWeapon != null)
+                        currentCharacterData.pcRightWeapon.Add(i, WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).rightWeapon.itemID);
+                    else
+                        currentCharacterData.pcRightWeapon.Add(i, WorldItemDatabase.instance.unarmedWeapon.itemID);
+
+                    if (WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).leftWeapon != null)
+                        currentCharacterData.pcLeftWeapon.Add(i, WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).leftWeapon.itemID);
+                    else
+                        currentCharacterData.pcLeftWeapon.Add(i, WorldItemDatabase.instance.unarmedWeapon.itemID);
+
+
+                    if (WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).hatOutfit != null)
+                        currentCharacterData.pcHatOutfit.Add(i, WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).hatOutfit.itemID);
+                    else
+                        currentCharacterData.pcHatOutfit.Add(i, -1);
+
+                    if (WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).jacketOutfit != null)
+                        currentCharacterData.pcJacketOutfit.Add(i, WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).jacketOutfit.itemID);
+                    else
+                        currentCharacterData.pcJacketOutfit.Add(i, -1);
+
+                    if (WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).topsOutfit != null)
+                        currentCharacterData.pcTopsOutfit.Add(i, WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).topsOutfit.itemID);
+                    else
+                        currentCharacterData.pcTopsOutfit.Add(i, -1);
+
+                    if (WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).bottomsOutfit != null)
+                        currentCharacterData.pcBottomsOutfit.Add(i, WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).bottomsOutfit.itemID);
+                    else
+                        currentCharacterData.pcBottomsOutfit.Add(i, -1);
+
+                    if (WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).shoesOutfit != null)
+                        currentCharacterData.pcShoesOutfit.Add(i, WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i).shoesOutfit.itemID);
+                    else
+                        currentCharacterData.pcShoesOutfit.Add(i, -1);
+
+                }
+            }
+
+            for (int i = 0; i < inventory.itemsInInventory.Count; i++)
+            {
+                if (!currentCharacterData.itemsInInventory.ContainsKey(i))
+                {
+                }
+                else
+                {
+                    currentCharacterData.itemsInInventory.Remove(i);
+                    currentCharacterData.itemsInInventory.Add(i, inventory.itemsInInventory[i].itemID);
+                }
+            }
         }
 
         public void LoadGameDataFromCurrentCharacterData(ref CharacterSaveData currentCharacterData)
         {
             playerNetworkManager.characterName.Value = currentCharacterData.characterName;
-            Vector3 myPosition = new Vector3(currentCharacterData.xPosition, currentCharacterData.yPosition, currentCharacterData.zPosition);
+            Vector3 myPosition = new Vector3(currentCharacterData.xPosition, currentCharacterData.yPosition + 5f, currentCharacterData.zPosition);
             transform.position = myPosition;
 
             playerNetworkManager.vitality.Value = currentCharacterData.vitality;
@@ -230,6 +322,45 @@ namespace RK
             playerNetworkManager.currentHealth.Value = currentCharacterData.currentHealth;
             playerNetworkManager.currentStamina.Value = currentCharacterData.currentStamina;
             PlayerUIManager.instance.playerUIHudManager.SetMaxStaminaValue(playerNetworkManager.maxStamina.Value);
+
+            for (int i = 0; i < currentCharacterData.ptID.Length; i++)
+            {
+                NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<EntryManager>().playableCharacterEntryNetworkManager.currentPTIDForSaveAndLoad[i] = currentCharacterData.ptID[i];
+            }
+
+            for (int i = 1; i < WorldPlayableCharacterDatabase.instance.GetPlayableCharacterCount(); i++)
+            {
+                PlayableCharacter pc = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i);
+                pc.rightWeapon = WorldItemDatabase.instance.GetWeaponByID(currentCharacterData.pcRightWeapon[i]);
+                pc.leftWeapon = WorldItemDatabase.instance.GetWeaponByID(currentCharacterData.pcLeftWeapon[i]);
+
+                inventory.ChangeCurrentEquipmentList(i, WorldItemDatabase.instance.GetWeaponByID(currentCharacterData.pcRightWeapon[i]), EquipmentType.RightWeapon01);
+                inventory.ChangeCurrentEquipmentList(i, WorldItemDatabase.instance.GetWeaponByID(currentCharacterData.pcLeftWeapon[i]), EquipmentType.LeftWeapon01);
+
+
+                pc.hatOutfit = WorldItemDatabase.instance.GetHatOutfitByID(currentCharacterData.pcHatOutfit[i]);
+                pc.jacketOutfit = WorldItemDatabase.instance.GetJacketOutfitByID(currentCharacterData.pcJacketOutfit[i]);
+                pc.topsOutfit = WorldItemDatabase.instance.GetTopsOutfitByID(currentCharacterData.pcTopsOutfit[i]);
+                pc.bottomsOutfit = WorldItemDatabase.instance.GetBottomsOutfitByID(currentCharacterData.pcBottomsOutfit[i]);
+                pc.shoesOutfit = WorldItemDatabase.instance.GetShoesOutfitByID(currentCharacterData.pcShoesOutfit[i]);
+                pc.CalculateCharacterStats();
+
+                inventory.ChangeCurrentEquipmentList(i, WorldItemDatabase.instance.GetHatOutfitByID(currentCharacterData.pcHatOutfit[i]), EquipmentType.Hat);
+                inventory.ChangeCurrentEquipmentList(i, WorldItemDatabase.instance.GetJacketOutfitByID(currentCharacterData.pcJacketOutfit[i]), EquipmentType.Jacket);
+                inventory.ChangeCurrentEquipmentList(i, WorldItemDatabase.instance.GetTopsOutfitByID(currentCharacterData.pcTopsOutfit[i]), EquipmentType.Tops);
+                inventory.ChangeCurrentEquipmentList(i, WorldItemDatabase.instance.GetBottomsOutfitByID(currentCharacterData.pcBottomsOutfit[i]), EquipmentType.Bottoms);
+                inventory.ChangeCurrentEquipmentList(i, WorldItemDatabase.instance.GetShoesOutfitByID(currentCharacterData.pcShoesOutfit[i]), EquipmentType.Shoes);
+
+                WorldPlayableCharacterDatabase.instance.SetEquipment(pc);
+            }
+            if (currentCharacterData.itemsInInventory != null)
+            {
+                for (int i = 0; i < currentCharacterData.itemsInInventory.Count; i++)
+                {
+                    int id = currentCharacterData.itemsInInventory[i];
+                    inventory.AddItemToInventory(WorldItemDatabase.instance.GetItemByID(id));
+                }
+            }
         }
 
 
@@ -238,6 +369,9 @@ namespace RK
             // 武器の同期
             playerNetworkManager.OnCurrentRightHandWeaponIDChange(0, playerNetworkManager.currentRightHandWeaponID.Value);
             playerNetworkManager.OnCurrentLeftHandWeaponIDChange(0, playerNetworkManager.currentLeftHandWeaponID.Value);
+
+            // ブロック状態の同期
+            playerNetworkManager.OnIsBlockingChanged(false, playerNetworkManager.isBlocking.Value);
 
             if (playerNetworkManager.isLockedOn.Value)
             {
@@ -266,7 +400,7 @@ namespace RK
         /// </summary>
         public void SetRecastSkillBurst()
         {
-            if (playerBurstManager.nowRecastingBurst)
+            if (playerBurstManager.nowRecasting)
             {
                 PlayerUIManager.instance.playerUIHudManager.SetEnabledBurstRecast(playerBurstManager.currentRecastBurst);
             }

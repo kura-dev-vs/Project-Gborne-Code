@@ -16,6 +16,11 @@ namespace RK
 
             durkCharacterManager = GetComponentInParent<AIDurkCharacterManager>();
         }
+        protected override void Start()
+        {
+            base.Start();
+            physicalDamage = durkCharacterManager.durkCombatManager.stompDamage;
+        }
         public void StompAttack()
         {
             GameObject stompVFX = Instantiate(durkCharacterManager.durkCombatManager.durkImpactVFX, transform);
@@ -24,23 +29,29 @@ namespace RK
 
             foreach (var collider in colliders)
             {
-                CharacterManager character = collider.GetComponentInParent<CharacterManager>();
+                CharacterManager damageTarget = collider.GetComponentInParent<CharacterManager>();
 
-                if (character != null)
+                if (damageTarget != null)
                 {
-                    if (charactersDamaged.Contains(character))
+                    if (charactersDamaged.Contains(damageTarget))
                         continue;
-                    if (character == durkCharacterManager)
+                    if (damageTarget == durkCharacterManager)
                         continue;
-                    charactersDamaged.Add(character);
+                    charactersDamaged.Add(damageTarget);
 
-                    if (character.IsOwner)
+                    if (damageTarget.IsOwner)
                     {
+                        Debug.Log("poiseDamage : collider :" + poiseDamage);
+                        CheckForBlock(damageTarget);
+                        if (!damageTarget.characterNetworkManager.isInvulnerable.Value)
+                            DamageTarget(damageTarget);
+                        /*
                         TakeDamageEffect damageEffect = Instantiate(WorldCharacterEffectsManager.instance.takeDamageEffect);
                         damageEffect.physicalDamage = durkCharacterManager.durkCombatManager.stompDamage;
                         damageEffect.poiseDamage = durkCharacterManager.durkCombatManager.stompDamage;
 
                         character.characterEffectsManager.ProcessInstantEffect(damageEffect);
+                        */
                     }
                 }
             }

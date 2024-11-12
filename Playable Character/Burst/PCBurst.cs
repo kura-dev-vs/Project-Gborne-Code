@@ -21,5 +21,16 @@ namespace RK
         public int burst_Lv = 1;
         [Header("Burst Actions")]
         public PCBurstAction burstAction;
+
+        [Header("Skill Model")]
+        public GameObject burstModel;
+
+        [Header("Duration Time")]
+        public float[] durationTime;
+
+        [Header("Support Modifiers")]
+        public float[] support_Modifier;
+        public float[] base_Percentage;
+        public float[] lv_Modifier;
     }
 }

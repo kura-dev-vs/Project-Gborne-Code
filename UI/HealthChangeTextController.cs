@@ -25,7 +25,7 @@ namespace RK
         private void Awake()
         {
             _parentUI = _targetUI.parent.GetComponent<RectTransform>();
-            healthText = GetComponent<TextMeshProUGUI>();
+            healthText = GetComponentInChildren<TextMeshProUGUI>();
             _worldOffset += new Vector3(Random.Range(-randomRange, randomRange), Random.Range(0, randomRange), Random.Range(-randomRange, randomRange));
         }
         private void Start()
@@ -66,6 +66,8 @@ namespace RK
             _targetUI.gameObject.SetActive(isFront);
             if (!isFront) return;
 
+            /*
+            Screen space overlayの場合
             // オブジェクトのワールド座標→スクリーン座標変換
             var targetScreenPos = _targetCamera.WorldToScreenPoint(targetWorldPos);
 
@@ -79,6 +81,18 @@ namespace RK
 
             // RectTransformのローカル座標を更新
             _targetUI.localPosition = uiLocalPos;
+            */
+
+            // Screen space cameraの場合
+
+            _targetUI.localPosition = CameraUtils.WorldToScreenSpaceCamera
+            (
+                worldCamera: PlayerCamera.instance.mainCamera,
+                canvasCamera: UICamera.instance.mainCamera,
+                canvasRectTransform: GetComponent<RectTransform>(),
+                worldPosition: targetWorldPos
+            );
+
         }
     }
 }

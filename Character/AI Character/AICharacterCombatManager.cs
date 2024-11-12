@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 
 namespace RK
 {
@@ -26,12 +27,86 @@ namespace RK
         public float maximumFOV = 35;
         [Header("Attack Rotation Speed")]
         public float attackRotationSpeed = 25;
+
+        [Header("Stance Settings")]
+        public float maxStance;
+        public float currentStance;
+        //public NetworkVariable<float> verticalMovement = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        //public NetworkVariable<float> moveAmount = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        [SerializeField] float stanceRegenerationPersecond = 15;    // 1秒毎の回復量
+        [SerializeField] bool ignoreStanceBreak = false;
+
+        [Header("Stance Timer")]
+        [SerializeField] float stanceRegenerationTimer = 0;
+        private float stanceTickTimer = 0;
+        [SerializeField] float defaultTimerUntilStanceRegenerationBeings = 15;
+
         protected override void Awake()
         {
             base.Awake();
             aiCharacter = GetComponent<AICharacterManager>();
         }
-        /// <summary>
+        private void FixedUpdate()
+        {
+            HandleStanceBreak();
+        }
+        private void HandleStanceBreak()
+        {
+            if (!aiCharacter.IsOwner)
+                return;
+            if (aiCharacter.isDead.Value)
+                return;
+
+            if (stanceRegenerationTimer > 0)
+            {
+                stanceRegenerationTimer -= Time.deltaTime;
+            }
+            else
+            {
+                stanceRegenerationTimer = 0;
+
+                if (currentStance < maxStance)
+                {
+                    stanceTickTimer += Time.deltaTime;
+
+                    if (stanceTickTimer >= 1)
+                    {
+                        stanceTickTimer = 0;
+                        currentStance += stanceRegenerationPersecond;
+                    }
+                }
+                else
+                {
+                    currentStance = maxStance;
+                }
+            }
+
+            if (currentStance <= 0)
+            {
+                DamageIntensity previousDamageIntensity = WorldUtilityManager.instance.GetDamageIntensityBasedOnPoiseDamage(previousPoiseDmageTaken);
+
+                if (previousDamageIntensity == DamageIntensity.Colossal)
+                {
+                    currentStance = 1;
+                    return;
+                }
+                currentStance = maxStance;
+                if (ignoreStanceBreak)
+                    return;
+                aiCharacter.characterAnimatorManager.PlayTargetActionAnimation("Stance_Break_01", true);
+                //aiCharacter.criticalInteractable.ActiveCollider();
+            }
+        }
+
+        public void DamageStance(int stanceDamage)
+        {
+            stanceRegenerationTimer = defaultTimerUntilStanceRegenerationBeings;
+
+            currentStance -= stanceDamage;
+        }
+
+        // <summary>
         /// targetの索敵. 先にspherecollliderで候補を見つけてから正面の敵をターゲットに入れる
         /// </summary>
         /// <param name="aiCharacter"></param>

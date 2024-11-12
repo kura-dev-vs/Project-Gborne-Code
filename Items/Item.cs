@@ -6,9 +6,7 @@ namespace RK
 {
     /// <summary>
     /// 武器やアイテムなどの雛形
-    /// </summary> <summary>
-    /// 
-    /// </summary>
+    /// </summary> 
     public class Item : ScriptableObject
     {
         [Header("Item Information")]

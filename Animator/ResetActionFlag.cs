@@ -35,6 +35,11 @@ namespace RK
                 character.canDodge = true;
                 character.characterNetworkManager.isJumping.Value = false;
                 character.characterNetworkManager.isInvulnerable.Value = false;
+                character.characterNetworkManager.isAttacking.Value = false;
+                character.characterNetworkManager.isParrying.Value = false;
+                character.characterNetworkManager.isParryable.Value = false;
+                character.characterNetworkManager.isRipostable.Value = false;
+                character.characterNetworkManager.isBeingCriticallyDamaged.Value = false;
             }
 
         }

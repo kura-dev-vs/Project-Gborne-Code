@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace RK
@@ -11,16 +12,14 @@ namespace RK
     public class LightAttackWeaponItemAction : WeaponItemAction
     {
         [Header("Light Attacks")]
-        [SerializeField] string light_Attack_01 = "Main_Light_Attack_01";
-        [SerializeField] string light_Attack_02 = "Main_Light_Attack_02";
-        [SerializeField] string light_Attack_03 = "Main_Light_Attack_03";
-        [SerializeField] string light_Attack_04 = "Main_Light_Attack_04";
+        [SerializeField] string[] light_Attack = { "Main_Light_Attack_01", "Main_Light_Attack_02", "Main_Light_Attack_03", "Main_Light_Attack_04" };
         [Header("Running Attacks")]
         [SerializeField] string run_Attack_01 = "Main_Run_Attack_01";
         [Header("Rolling Attacks")]
         [SerializeField] string roll_Attack_01 = "Main_Roll_Attack_01";
         [Header("Backstep Attacks")]
         [SerializeField] string backstep_Attack_01 = "Main_Backstep_Attack_01";
+        [SerializeField] AttackType[] attackType = { AttackType.LightAttack01, AttackType.LightAttack02, AttackType.LightAttack03, AttackType.LightAttack04 };
         public override void AttemptToPerformAction(PlayerManager playerPerformingAction, WeaponItem weaponPerformingAction)
         {
             base.AttemptToPerformAction(playerPerformingAction, weaponPerformingAction);
@@ -30,6 +29,8 @@ namespace RK
                 return;
             if (!playerPerformingAction.playerNetworkManager.isGrounded.Value)
                 return;
+            if (playerPerformingAction.IsOwner)
+                playerPerformingAction.playerNetworkManager.isAttacking.Value = true;
 
             // sprint時の特殊モーション
             if (playerPerformingAction.characterNetworkManager.isSprinting.Value)
@@ -60,30 +61,29 @@ namespace RK
             if (playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon && playerPerformingAction.isPerformingAction)
             {
                 playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon = false;
+                string lastAnimation = playerPerformingAction.characterCombatManager.lastAttackAnimationPerformed;
 
-                // 最後の攻撃モーションに応じたモーションを行う
-                if (playerPerformingAction.characterCombatManager.lastAttackAnimationPerformed == light_Attack_01)
+                if (light_Attack.Contains(lastAnimation) || light_Attack.LastOrDefault() == lastAnimation)
                 {
-                    playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.LightAttack02, light_Attack_02, true);
-                }
-                else if (playerPerformingAction.characterCombatManager.lastAttackAnimationPerformed == light_Attack_02)
-                {
-                    playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.LightAttack03, light_Attack_03, true);
-                }
-                else if (playerPerformingAction.characterCombatManager.lastAttackAnimationPerformed == light_Attack_03)
-                {
-                    playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.LightAttack04, light_Attack_04, true);
+                    for (int i = 0; i < light_Attack.Length - 1; i++)
+                    {
+                        if (lastAnimation == light_Attack[i])
+                        {
+                            playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(weaponPerformingAction, attackType[i + 1], light_Attack[i + 1], true);
+                            break;
+                        }
+                    }
                 }
                 else
                 {
-                    playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.LightAttack01, light_Attack_01, true);
+                    playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(weaponPerformingAction, AttackType.LightAttack01, light_Attack[0], true);
                 }
             }
             // 非モーション中
             else if (!playerPerformingAction.isPerformingAction)
             {
                 playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon = false;
-                playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.LightAttack01, light_Attack_01, true);
+                playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(weaponPerformingAction, AttackType.LightAttack01, light_Attack[0], true);
             }
             else
             {
@@ -93,17 +93,17 @@ namespace RK
         }
         private void PerformRunningAttack(PlayerManager playerPerformingAction, WeaponItem weaponPerformingAction)
         {
-            playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.RunningAttack01, run_Attack_01, true);
+            playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(weaponPerformingAction, AttackType.RunningAttack01, run_Attack_01, true);
         }
         private void PerformRollingAttack(PlayerManager playerPerformingAction, WeaponItem weaponPerformingAction)
         {
             playerPerformingAction.playerCombatManager.canPerformRollingAttack = false;
-            playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.RollingAttack01, roll_Attack_01, true);
+            playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(weaponPerformingAction, AttackType.RollingAttack01, roll_Attack_01, true);
         }
         private void PerformBackstepAttack(PlayerManager playerPerformingAction, WeaponItem weaponPerformingAction)
         {
             playerPerformingAction.playerCombatManager.canPerformBackstepAttack = false;
-            playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.BackstepAttack01, backstep_Attack_01, true);
+            playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(weaponPerformingAction, AttackType.BackstepAttack01, backstep_Attack_01, true);
         }
     }
 }

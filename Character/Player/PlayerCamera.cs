@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Cinemachine;
 using RK;
 using Unity.VisualScripting;
-using UnityEditor.Rendering.LookDev;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UI;
@@ -16,10 +15,13 @@ public class PlayerCamera : MonoBehaviour
 {
     public Camera mainCamera;
     [SerializeField] Camera uiCamera;
+    public Camera ui3DCamera;
     public static PlayerCamera instance;
-    [HideInInspector] public PlayerManager player;
+    public PlayerManager player;
     public CinemachineFreeLook cameraObject;
     public CinemachineVirtualCamera lockOnCamera;
+    public CinemachineBrain brain;
+    public GameObject blackObject;
     [Header("Lock On")]
     [SerializeField] private float lockOnRadius = 20;
     [SerializeField] float minimumViewableAngle = -90;
@@ -49,6 +51,7 @@ public class PlayerCamera : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         mainCamera = GetComponentInChildren<Camera>();
         cameraTrn = mainCamera.transform;
+        brain = GetComponentInChildren<CinemachineBrain>();
     }
     private void Update()
     {
@@ -66,8 +69,6 @@ public class PlayerCamera : MonoBehaviour
         {
             var targetScreenPos = mainCamera.WorldToScreenPoint(lockOnCamera.LookAt.transform.position);
             RectTransform parentUI = lockonCursor.parent.GetComponent<RectTransform>();
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(parentUI, targetScreenPos, null, out var uiLocalPos);
-            lockonCursor.localPosition = uiLocalPos;
         }
         else
         {
@@ -111,6 +112,7 @@ public class PlayerCamera : MonoBehaviour
     public void SetLockOnTargets(CharacterManager target)
     {
         lockonCursor.GetComponent<Image>().enabled = true;
+        lockonCursor.GetComponentInParent<LockOnCursor>().Initialize(target.myLockOnTransform.transform, target.myLockOnTransform.transform.gameObject);
         lockOnCamera.LookAt = target.myLockOnTransform.transform;
         lockOnCamera.Priority = lockOnPriority;
     }

@@ -29,5 +29,19 @@ namespace RK
             // サーバーにアクションを実行したことを通知
             entry.playableCharacterEntryNetworkManager.NotifyTheServerOfSkillActionServerRpc(NetworkManager.Singleton.LocalClientId, skillAction.skillActionID, pcSkill.skill.skillID, direction);
         }
+
+        public void PerformPCBasedBurstAction(PCBurstAction burstAction, PlayerBurstManager pcBurst)
+        {
+            if (burstAction == null)
+            {
+                Debug.Log("DON'T SET Burst ACTION");
+                return;
+            }
+            // owner側がアクションを起こす
+            burstAction.AttemptToPerformBurst(entry.player, pcBurst);
+
+            // サーバーにアクションを実行したことを通知
+            entry.playableCharacterEntryNetworkManager.NotifyTheServerOfBurstActionServerRpc(NetworkManager.Singleton.LocalClientId, burstAction.burstActionID, pcBurst.burst.burstID);
+        }
     }
 }

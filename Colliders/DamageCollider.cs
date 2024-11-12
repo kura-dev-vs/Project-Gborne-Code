@@ -19,10 +19,18 @@ public class DamageCollider : MonoBehaviour
     public float fireDamage = 0;
     public float lightningDamage = 0;
     public float holyDamage = 0;
+
+    [Header("Poise")]
+    public float poiseDamage = 0;
+    public float stanceDamage = 0;
     [Header("Contact Point")]
     protected Vector3 contactPoint;
     [Header("Characters Damaged")]
     protected List<CharacterManager> charactersDamaged = new List<CharacterManager>();
+    [Header("Block")]
+    protected Vector3 directionFromAttackToDamageTarget;
+    protected float dotValueFromAttackToDamageTarget;
+
     protected virtual void Awake()
     {
 
@@ -37,16 +45,58 @@ public class DamageCollider : MonoBehaviour
     /// <param name="other"></param>
     protected virtual void OnTriggerEnter(Collider other)
     {
-        Debug.Log("trigger");
         CharacterManager damageTarget = other.GetComponentInParent<CharacterManager>();
 
         if (damageTarget != null)
         {
             contactPoint = other.gameObject.GetComponent<Collider>().ClosestPointOnBounds(transform.position);
-
-            DamageTarget(damageTarget);
+            CheckForBlock(damageTarget);
+            CheckForParry(damageTarget);
+            if (!damageTarget.characterNetworkManager.isInvulnerable.Value)
+                DamageTarget(damageTarget);
         }
     }
+    protected virtual void CheckForBlock(CharacterManager damageTarget)
+    {
+        // 
+        if (charactersDamaged.Contains(damageTarget))
+            return;
+
+        GetBlockingDotValue(damageTarget);
+
+        if (damageTarget.characterNetworkManager.isBlocking.Value && dotValueFromAttackToDamageTarget > -0.1f)
+        {
+            charactersDamaged.Add(damageTarget);
+
+            TakeBlockDamageEffect blockEffect = Instantiate(WorldCharacterEffectsManager.instance.takeBlockDamageEffect);
+
+            blockEffect.physicalDamage = physicalDamage;
+            blockEffect.magicDamage = magicDamage;
+            blockEffect.fireDamage = fireDamage;
+            blockEffect.holyDamage = holyDamage;
+            blockEffect.poiseDamage = poiseDamage;
+            blockEffect.staminaDamage = poiseDamage;
+            blockEffect.contactPoint = contactPoint;
+
+            damageTarget.characterEffectsManager.ProcessInstantEffect(blockEffect);
+
+        }
+    }
+
+    protected virtual void CheckForParry(CharacterManager damageTarget)
+    {
+
+    }
+    /// <summary>
+    /// ブロック状態での内積計算
+    /// </summary>
+    /// <param name="damageTarget"></param>
+    protected virtual void GetBlockingDotValue(CharacterManager damageTarget)
+    {
+        directionFromAttackToDamageTarget = transform.position - damageTarget.transform.position;
+        dotValueFromAttackToDamageTarget = Vector3.Dot(directionFromAttackToDamageTarget, damageTarget.transform.forward);
+    }
+
     protected virtual void DamageTarget(CharacterManager damageTarget)
     {
         // 同じ相手にダメージを二度与えたくないため、一度与えた相手はlistに加えてそれ以降スルーする (colliderを閉じる際にクリアされる)
@@ -59,7 +109,10 @@ public class DamageCollider : MonoBehaviour
         damageEffect.magicDamage = magicDamage;
         damageEffect.fireDamage = fireDamage;
         damageEffect.holyDamage = holyDamage;
+        damageEffect.poiseDamage = poiseDamage;
+        damageEffect.stanceDamage = stanceDamage;
         damageEffect.contactPoint = contactPoint;
+        damageEffect.angleHitFrom = Vector3.SignedAngle(contactPoint, damageTarget.transform.forward, Vector3.up);
 
         damageTarget.characterEffectsManager.ProcessInstantEffect(damageEffect);
     }
@@ -76,4 +129,5 @@ public class DamageCollider : MonoBehaviour
         // listのリセット
         charactersDamaged.Clear();
     }
+
 }

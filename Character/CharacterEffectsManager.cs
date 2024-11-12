@@ -17,7 +17,10 @@ namespace RK
         [HideInInspector] public CharacterManager character;
         [Header("VFX")]
         [SerializeField] GameObject bloodSplatterVFX;
+        [SerializeField] GameObject criticalBloodSplatterVFX;
         [SerializeField] GameObject healVFX;
+        [Header("Static Effects")]
+        public List<StaticCharacterEffect> staticEffects = new List<StaticCharacterEffect>();
         protected virtual void Awake()
         {
             character = GetComponent<CharacterManager>();
@@ -43,6 +46,61 @@ namespace RK
             }
         }
 
+        public void PlayCriticalBloodSplatterVFX(Vector3 contactPoint)
+        {
+            if (criticalBloodSplatterVFX != null)
+            {
+                GameObject bloodSplatter = Instantiate(criticalBloodSplatterVFX, contactPoint, Quaternion.identity);
+            }
+            else
+            {
+                GameObject bloodSplatter = Instantiate(WorldCharacterEffectsManager.instance.criticalBloodSplatterVFX, contactPoint, Quaternion.identity);
+            }
+        }
+
+        public void AddStaticEffect(StaticCharacterEffect effect)
+        {
+            // if you want to sync effects across network, if you are the owner launch a server rpc here to process the effect on all other clients
+
+            // 1. add a static effect to the character
+            staticEffects.Add(effect);
+
+            // 2. process its effect
+            effect.ProcessStaticEffect(character);
+
+            // 3. check for null entries in your list and remove them
+            for (int i = staticEffects.Count - 1; i > -1; i--)
+            {
+                if (staticEffects[i] == null)
+                    staticEffects.RemoveAt(i);
+            }
+        }
+        public void RemoveStaticEffect(int effectID)
+        {
+            // if you want to sync effects across network, if you are the owner launch a server rpc here to process the effect on all other clients
+            StaticCharacterEffect effect;
+
+            for (int i = 0; i < staticEffects.Count; i++)
+            {
+                if (staticEffects[i] != null)
+                {
+                    if (staticEffects[i].staticEffectID == effectID)
+                    {
+                        effect = staticEffects[i];
+                        // 1. remove static effect from character
+                        effect.RemoveStaticEffect(character);
+                        // 2. remove static effect from list
+                        staticEffects.Remove(effect);
+                    }
+                }
+            }
+            // 3. check for null entries in your list and remove them
+            for (int i = staticEffects.Count - 1; i > -1; i--)
+            {
+                if (staticEffects[i] == null)
+                    staticEffects.RemoveAt(i);
+            }
+        }
         /// <summary>
         /// 被ヒールのVFX
         /// 専用のものを追加する場合はhealVFXに設定しておき、なかったら共通のものが実行される

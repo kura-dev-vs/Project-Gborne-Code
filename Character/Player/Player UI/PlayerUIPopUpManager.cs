@@ -23,11 +23,20 @@ namespace RK
         [SerializeField] TextMeshProUGUI bossDefeatedPopUpText;
         [SerializeField] CanvasGroup bossDefeatedPopUpCanvasGroup;
 
+        [Header("Rest Point Pop Up")]
+        [SerializeField] GameObject restPointPopUpGameObject;
+        [SerializeField] TextMeshProUGUI restPointPopUpBackgroundText;
+        [SerializeField] TextMeshProUGUI restPointPopUpText;
+        [SerializeField] CanvasGroup restPointPopUpCanvasGroup;
+
         [Header("SCORE Pop Up")]
         [SerializeField] GameObject scorePopUpObject;
         [SerializeField] TextMeshProUGUI scoretext;
 
-
+        public void CloseAllPopUpWindow()
+        {
+            PlayerUIManager.instance.popUpWindowIsOpen = false;
+        }
         public void SendYouDiedPopUp()
         {
             // ここでpost processingを起動できる？？ 
@@ -61,6 +70,19 @@ namespace RK
             StartCoroutine(StretchPopUpTextOverTime(bossDefeatedPopUpBackgroundText, 8, 19f));
             StartCoroutine(FadeInPopUpOverTime(bossDefeatedPopUpCanvasGroup, 5));
             StartCoroutine(WaitThenFadeOutPopUpOverTime(bossDefeatedPopUpCanvasGroup, 2, 5));
+            // フェードアウト
+        }
+
+        public void SendRestPointPopUp(string restPointMessage)
+        {
+            // ここでpost processingを起動できる？？ 
+            restPointPopUpText.text = restPointMessage;
+            restPointPopUpBackgroundText.text = restPointMessage;
+            restPointPopUpGameObject.SetActive(true);
+            restPointPopUpBackgroundText.characterSpacing = 0;
+            StartCoroutine(StretchPopUpTextOverTime(restPointPopUpBackgroundText, 8, 19f));
+            StartCoroutine(FadeInPopUpOverTime(restPointPopUpCanvasGroup, 5));
+            StartCoroutine(WaitThenFadeOutPopUpOverTime(restPointPopUpCanvasGroup, 2, 5));
             // フェードアウト
         }
         private IEnumerator StretchPopUpTextOverTime(TextMeshProUGUI text, float duration, float stretchAmount)

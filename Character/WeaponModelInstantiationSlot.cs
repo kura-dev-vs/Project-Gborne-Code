@@ -28,5 +28,33 @@ namespace RK
             weaponModel.transform.localRotation = Quaternion.identity;
             //weaponModel.transform.localScale = Vector3.one;
         }
+        public void PlaceWeaponModelInUnequippedSlot(GameObject weaponModel, WeaponClass weaponClass, PlayerManager player)
+        {
+            // to do, move weapon on back closer or more outward on chest equipment (so it doesnt apper to float)
+            currentWeaponModel = weaponModel;
+            weaponModel.transform.parent.parent = transform;
+
+            switch (weaponClass)
+            {
+                case WeaponClass.StraightSword:
+                    weaponModel.transform.localPosition = new Vector3(0.0064f, 0f, -0.06f);
+                    weaponModel.transform.localRotation = Quaternion.Euler(194, 90, -0.22f);
+                    break;
+                case WeaponClass.Spear:
+                    weaponModel.transform.localPosition = new Vector3(0.0064f, 0f, -0.06f);
+                    weaponModel.transform.localRotation = Quaternion.Euler(194, 90, -0.22f);
+                    break;
+                case WeaponClass.Gun:
+                    weaponModel.transform.localPosition = new Vector3(0.0064f, 0f, -0.06f);
+                    weaponModel.transform.localRotation = Quaternion.Euler(194, 90, -0.22f);
+                    break;
+                case WeaponClass.MediumShield:
+                    weaponModel.transform.localPosition = new Vector3(0.09f, -0.292f, -0.1f);
+                    weaponModel.transform.localRotation = Quaternion.Euler(0, -193.2f, 0);
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }

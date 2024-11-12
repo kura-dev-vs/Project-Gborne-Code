@@ -9,8 +9,7 @@ namespace RK
         [Header("Collider")]
         [SerializeField] protected Collider damageCollider;
         [Header("Damage")]
-        public float baseDamage = 0;
-        float timeCount = 0;
+        //public float baseDamage = 0;
         [Header("Characters Damaged")]
         [SerializeField] protected List<CharacterManager> charactersDamaged = new List<CharacterManager>();
         [Header("Damaging Character")]
@@ -27,7 +26,22 @@ namespace RK
                 damageCollider = GetComponent<Collider>();
             }
         }
-        protected virtual void OnTriggerEnter(Collider other)
+        private void Update()
+        {
+            // durationTimeの間隔でリストをリセットし、回復を行う
+            if (resetListPermission == false)
+                return;
+            if (durationTime != 0)
+            {
+                timeCount += Time.deltaTime;
+                if (timeCount > durationTime)
+                {
+                    ClearCharacterList();
+                    timeCount = 0;
+                }
+            }
+        }
+        protected virtual void OnTriggerStay(Collider other)
         {
             CharacterManager damageTarget = other.GetComponentInParent<CharacterManager>();
 
@@ -46,7 +60,8 @@ namespace RK
             }
             else
             {
-                Destroy(gameObject, 1f);
+                if (triggerForDestroy)
+                    Destroy(gameObject, 1f);
             }
         }
         protected virtual void DamageTarget(CharacterManager damageTarget)
@@ -83,6 +98,7 @@ namespace RK
                     damageEffect.fireDamage,
                     damageEffect.holyDamage,
                     damageEffect.poiseDamage,
+                    damageEffect.stanceDamage,
                     damageEffect.angleHitFrom,
                     damageEffect.contactPoint.x,
                     damageEffect.contactPoint.y,

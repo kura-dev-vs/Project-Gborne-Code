@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering.RenderGraphModule;
+using UnityEngine.UIElements;
 
 namespace RK
 {
@@ -15,6 +16,7 @@ namespace RK
         [Header("Layers")]
         [SerializeField] LayerMask characterLayers;
         [SerializeField] LayerMask enviroLayers;
+        [SerializeField] LayerMask uiLayers;
         private void Awake()
         {
             if (instance == null)
@@ -33,6 +35,10 @@ namespace RK
         public LayerMask GetEnviroLayers()
         {
             return enviroLayers;
+        }
+        public LayerMask GetUILayers()
+        {
+            return uiLayers;
         }
         public bool CanIDamageThisTarget(CharacterGroup attackingCharacter, CharacterGroup targetCharacter)
         {
@@ -72,6 +78,49 @@ namespace RK
             if (cross.y < 0) viewableAngle = -viewableAngle;
 
             return viewableAngle;
+        }
+        public DamageIntensity GetDamageIntensityBasedOnPoiseDamage(float poiseDamage)
+        {
+            // throwing daggers, small items
+            DamageIntensity damageIntensity = DamageIntensity.Ping;
+
+            // daggers / light attacks
+            if (poiseDamage >= 10)
+                damageIntensity = DamageIntensity.Light;
+
+            // standard weapons / medium attacks
+            if (poiseDamage >= 30)
+                damageIntensity = DamageIntensity.Medium;
+
+            // great weapons / heavy attacks
+            if (poiseDamage >= 70)
+                damageIntensity = DamageIntensity.Heavy;
+
+            // ultra weapons / colossal attacks
+            if (poiseDamage >= 120)
+                damageIntensity = DamageIntensity.Colossal;
+
+            return damageIntensity;
+        }
+        public Vector3 GetRipostingPositionBasedOnPC(PlayableCharacter pc)
+        {
+            Vector3 position = new Vector3(0.1f, 0, 0.7f);
+
+            switch (pc)
+            {
+
+            }
+            return position;
+        }
+        public Vector3 GetBackstabPositionBasedOnPC(PlayableCharacter pc)
+        {
+            Vector3 position = new Vector3(0.1f, 0, 0.7f);
+
+            switch (pc)
+            {
+
+            }
+            return position;
         }
     }
 }

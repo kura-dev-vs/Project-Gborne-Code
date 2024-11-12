@@ -14,10 +14,19 @@ namespace RK
         public static PlayerUIManager instance;
         [Header("NETWORK JOIN")]
         [SerializeField] bool startGameAsClient;
-        [HideInInspector] public PlayerUIHudManager playerUIHudManager;
+        public PlayerUIHudManager playerUIHudManager;
         [HideInInspector] public PlayerUIPopUpManager playerUIPopUpManager;
         [HideInInspector] public PlayerUICurrentPTManager playerUICurrentPTManager;
         [HideInInspector] public PlayerUISelectablePCManager playerUISelectableCharacterManager;
+        [HideInInspector] public PlayerUIPCInfoManager playerUIPCInfoManager;
+        [HideInInspector] public PlayerUICharacterMenuManager playerUICharacterMenuManager;
+
+        public MultiplayerTentativeScript multiplayerTentativeScript;
+
+        [Header("UI Flags")]
+        public bool menuWindowIsOpen = false; // inventory screen, equipment menu, blacksmith menu ect
+        public bool popUpWindowIsOpen = false; // item pick up, dialogue pop up ect
+        Canvas myCanvas;
 
         private void Awake()
         {
@@ -33,6 +42,11 @@ namespace RK
             playerUIPopUpManager = GetComponentInChildren<PlayerUIPopUpManager>();
             playerUICurrentPTManager = GetComponentInChildren<PlayerUICurrentPTManager>();
             playerUISelectableCharacterManager = GetComponentInChildren<PlayerUISelectablePCManager>();
+            playerUIPCInfoManager = GetComponentInChildren<PlayerUIPCInfoManager>();
+            multiplayerTentativeScript = GetComponent<MultiplayerTentativeScript>();
+            playerUICharacterMenuManager = GetComponentInChildren<PlayerUICharacterMenuManager>();
+            myCanvas = GetComponent<Canvas>();
+            myCanvas.enabled = false;
         }
 
         private void Start()
@@ -44,15 +58,62 @@ namespace RK
             if (startGameAsClient)
             {
                 startGameAsClient = false;
-                // we must first shut down, because we have started as a host during the title screen
+
                 NetworkManager.Singleton.Shutdown();
-                // we then restart, as a client
+
                 NetworkManager.Singleton.StartClient();
             }
         }
-        public void OpenMenuUI(EntryManager entry)
+        public void DestroyChildAll(Transform parent)
         {
-            playerUICurrentPTManager.UIActivity(entry);
+            foreach (Transform child in parent)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+        public void OpenMenuUI()
+        {
+            if (playerUICurrentPTManager.uiActivity)
+            {
+                playerUICurrentPTManager.CloseUI();
+            }
+            else
+            {
+                playerUICurrentPTManager.OpenUI();
+            }
+        }
+        public void StartClient()
+        {
+            if (!startGameAsClient)
+            {
+                if (PlayerCamera.instance.player != null)
+                {
+                    if (PlayerCamera.instance.player.IsServer)
+                    {
+                        startGameAsClient = false;
+                    }
+                }
+                else
+                {
+                    startGameAsClient = true;
+                }
+            }
+        }
+        public void ActivateHUD()
+        {
+            myCanvas.enabled = true;
+        }
+        public void InActivateHUD()
+        {
+            myCanvas.enabled = false;
+        }
+        public void CloseAllMenuWindows()
+        {
+            playerUICharacterMenuManager.CloseCharacterMenu();
+        }
+        public void ToggleHUD(bool status)
+        {
+
         }
     }
 }

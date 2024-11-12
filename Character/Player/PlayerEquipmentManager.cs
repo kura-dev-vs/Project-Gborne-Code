@@ -14,10 +14,17 @@ namespace RK
     public class PlayerEquipmentManager : CharacterEquipmentManager
     {
         public PlayerManager player;
+        [Header("Weapon Model Instantiation Slots")]
         public WeaponModelInstantiationSlot rightHandSlot;
-        public WeaponModelInstantiationSlot leftHandSlot;
+        public WeaponModelInstantiationSlot leftHandWeaponSlot;
+        public WeaponModelInstantiationSlot leftHandShieldSlot;
+        public WeaponModelInstantiationSlot backRightSlot;
+        public WeaponModelInstantiationSlot backLeftSlot;
+
+        [Header("Weapon Managers")]
         public WeaponManager rightWeaponManager;
         public WeaponManager leftWeaponManager;
+        [Header("Weapon Models")]
         public GameObject rightHandWeaponModel;
         public GameObject leftHandWeaponModel;
         protected override void Awake()
@@ -45,9 +52,21 @@ namespace RK
                 {
                     rightHandSlot = weaponSlot;
                 }
-                else if (weaponSlot.weaponSlot == WeaponModelSlot.LeftHand)
+                else if (weaponSlot.weaponSlot == WeaponModelSlot.LeftHandWeaponSlot)
                 {
-                    leftHandSlot = weaponSlot;
+                    leftHandWeaponSlot = weaponSlot;
+                }
+                else if (weaponSlot.weaponSlot == WeaponModelSlot.LeftHandShieldSlot)
+                {
+                    leftHandShieldSlot = weaponSlot;
+                }
+                else if (weaponSlot.weaponSlot == WeaponModelSlot.backRightSlot)
+                {
+                    backRightSlot = weaponSlot;
+                }
+                else if (weaponSlot.weaponSlot == WeaponModelSlot.backLeftSlot)
+                {
+                    backLeftSlot = weaponSlot;
                 }
             }
         }
@@ -116,6 +135,7 @@ namespace RK
                     selectedWeapon = player.playerInventoryManager.weaponsInRightHandSlots[player.playerInventoryManager.rightHandWeaponIndex];
                     // ネットワーク変数のcurrentRightHandWeaponIDを切り替える
                     player.playerNetworkManager.currentRightHandWeaponID.Value = player.playerInventoryManager.weaponsInRightHandSlots[player.playerInventoryManager.rightHandWeaponIndex].itemID;
+                    Debug.Log("right" + player.playerInventoryManager.weaponsInRightHandSlots[player.playerInventoryManager.rightHandWeaponIndex].itemID);
                     return;
                 }
             }
@@ -126,6 +146,8 @@ namespace RK
             }
             else
             {
+                /*
+                // 現状以下が動作することはない
                 // 武器を1個以上持ってるかどうかチェックして持ってた場合一番最初に出てきた武器をfirstWeaponに入れる
                 float weaponCount = 0;
                 WeaponItem firstWeapon = null;
@@ -154,6 +176,7 @@ namespace RK
                     player.playerInventoryManager.rightHandWeaponIndex = firstWeaponPosition;
                     player.playerNetworkManager.currentRightHandWeaponID.Value = firstWeapon.itemID;
                 }
+                */
             }
         }
         public void LoadRightWeapon()
@@ -167,6 +190,7 @@ namespace RK
                 rightHandSlot.LoadWeapon(rightHandWeaponModel);
                 rightWeaponManager = rightHandWeaponModel.GetComponent<WeaponManager>();
                 rightWeaponManager.SetWeaponDamage(player, player.playerInventoryManager.currentRightHandWeapon);
+                player.playerAnimatorManager.UpdateAnimatorController(player.playerInventoryManager.currentRightHandWeapon.weaponAnimator);
             }
         }
         // 左手武器
@@ -229,6 +253,7 @@ namespace RK
                     selectedWeapon = player.playerInventoryManager.weaponsInLeftHandSlots[player.playerInventoryManager.leftHandWeaponIndex];
                     // ネットワーク変数のcurrentRightHandWeaponIDを切り替える
                     player.playerNetworkManager.currentLeftHandWeaponID.Value = player.playerInventoryManager.weaponsInLeftHandSlots[player.playerInventoryManager.leftHandWeaponIndex].itemID;
+                    Debug.Log("left" + player.playerInventoryManager.weaponsInLeftHandSlots[player.playerInventoryManager.leftHandWeaponIndex].itemID);
                     return;
                 }
             }
@@ -239,6 +264,8 @@ namespace RK
             }
             else
             {
+                // 現状以下が動作することはない
+                /*
                 // 武器を1個以上持ってるかどうかチェックして持ってた場合一番最初に出てきた武器をfirstWeaponに入れる
                 float weaponCount = 0;
                 WeaponItem firstWeapon = null;
@@ -256,6 +283,8 @@ namespace RK
                     }
                 }
 
+                // 所有武器が一個以下だと以下は使われない
+
                 if (weaponCount <= 1)
                 {
                     player.playerInventoryManager.leftHandWeaponIndex = -1;
@@ -267,6 +296,7 @@ namespace RK
                     player.playerInventoryManager.leftHandWeaponIndex = firstWeaponPosition;
                     player.playerNetworkManager.currentLeftHandWeaponID.Value = firstWeapon.itemID;
                 }
+                */
             }
         }
         public void LoadLeftWeapon()
@@ -274,12 +304,30 @@ namespace RK
             if (player.playerInventoryManager.currentLeftHandWeapon != null)
             {
                 // 切り替え前の武器をremove
-                leftHandSlot.UnloadWeapon();
+                if (leftHandWeaponSlot.currentWeaponModel != null)
+                    leftHandWeaponSlot.UnloadWeapon();
+
+                if (leftHandShieldSlot.currentWeaponModel != null)
+                    leftHandShieldSlot.UnloadWeapon();
+
                 // 切り替え後の武器をinstantiateして各種マネージャーに設定
                 leftHandWeaponModel = Instantiate(player.playerInventoryManager.currentLeftHandWeapon.weaponModel);
-                leftHandSlot.LoadWeapon(leftHandWeaponModel);
+
+                switch (player.playerInventoryManager.currentLeftHandWeapon.weaponModelType)
+                {
+                    case WeaponModelType.Weapon:
+                        leftHandWeaponSlot.LoadWeapon(leftHandWeaponModel);
+                        break;
+                    case WeaponModelType.Shield:
+                        leftHandShieldSlot.LoadWeapon(leftHandWeaponModel);
+                        break;
+                    default:
+                        break;
+                }
+
                 leftWeaponManager = leftHandWeaponModel.GetComponent<WeaponManager>();
                 leftWeaponManager.SetWeaponDamage(player, player.playerInventoryManager.currentLeftHandWeapon);
+                player.playerAnimatorManager.UpdateAnimatorController(player.playerInventoryManager.currentLeftHandWeapon.weaponAnimator);
             }
         }
         // damage colliders

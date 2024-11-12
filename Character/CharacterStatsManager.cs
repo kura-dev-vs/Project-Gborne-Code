@@ -10,11 +10,35 @@ namespace RK
     public class CharacterStatsManager : MonoBehaviour
     {
         [HideInInspector] public CharacterManager character;
-        [Header("Stamina Regeneration")]
-        [SerializeField] float staminaRegenerationAmount = 2;
-        private float staminaRegenerationTimer = 0;
-        private float staminaTickTimer = 0;
-        [SerializeField] float staminaRegenerationDelay = 2;
+
+        [Header("Blocking Absorptions")]
+        public float blockingPhysicalAbsorption;
+        public float blockingFireAbsorption;
+        public float blockingMagicAbsorption;
+        public float blockingLightningAbsorption;
+        public float blockingHolyAbsorption;
+        public float blockingStability;
+
+        [Header("Outfit Absorption Bonus")]
+        public float outfitPhysicalDamageAbsorption;
+        public float outfitMagicDamageAbsorption;
+        public float outfitFireDamageAbsorption;
+        public float outfitLightningDamageAbsorption;
+        public float outfitHolyDamageAbsorption;
+
+        [Header("Outfit Resistance Bonus")]
+        public float outfitImmunity;  // 毒耐性
+        public float outfitRobustness;    // 出血凍結耐性
+        public float outfitFocus;     // 睡眠、発狂耐性
+        public float outfitVitality;  // 呪い耐性
+
+        [Header("Poise: 強靭")]
+        public float totalPoiseDamage;              // 現在の総poise値
+        public float offensivePoiseBonus;           // 攻撃動作時の武器種による強靭ボーナス値
+        public float basePoiseDefense;              // ベースの強靭耐性
+        public float defaultPoiseResetTime = 8;     // リセット時間
+        public float poiseResetTimer = 0;           // タイマー
+
 
         protected virtual void Awake()
         {
@@ -22,6 +46,12 @@ namespace RK
         }
         protected virtual void Start()
         {
+        }
+        protected virtual void Update()
+        {
+            HandlePoiseResetTimer();
+            //ResetStaminaRegenTimer();
+
         }
         /// <summary>
         /// 体力の計算
@@ -49,46 +79,19 @@ namespace RK
 
             return Mathf.RoundToInt(stamina);
         }
-        /// <summary>
-        /// スタミナの回復
-        /// </summary> 
-        public virtual void RegenerateStamina()
-        {
-            if (character == null)
-                return;
-            if (!character.IsOwner)
-                return;
-            if (character.characterNetworkManager.isSprinting.Value)
-                return;
-            if (character.isPerformingAction)
-                return;
-            staminaRegenerationTimer += Time.deltaTime;
-            if (staminaRegenerationTimer >= staminaRegenerationDelay)
-            {
-                if (character.characterNetworkManager.currentStamina.Value < character.characterNetworkManager.maxStamina.Value)
-                {
-                    staminaTickTimer = staminaTickTimer + Time.deltaTime;
 
-                    if (staminaTickTimer >= 0.1)
-                    {
-                        staminaTickTimer = 0;
-                        character.characterNetworkManager.currentStamina.Value += staminaRegenerationAmount;
-                    }
-                }
+        protected virtual void HandlePoiseResetTimer()
+        {
+            if (poiseResetTimer > 0)
+            {
+                poiseResetTimer -= Time.deltaTime;
+            }
+            else
+            {
+                totalPoiseDamage = 0;
             }
         }
 
-        /// <summary>
-        /// スタミナ消費時、回復を行うまでのタイマーをリセットする用
-        /// </summary>
-        /// <param name="previousStaminaAmount"></param>
-        /// <param name="currentStaminaAmount"></param>
-        public virtual void ResetStaminaRegenTimer(float previousStaminaAmount, float currentStaminaAmount)
-        {
-            if (currentStaminaAmount < previousStaminaAmount)
-            {
-                staminaRegenerationTimer = staminaRegenerationDelay;
-            }
-        }
+
     }
 }

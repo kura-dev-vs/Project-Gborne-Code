@@ -45,6 +45,8 @@ namespace RK
                 meleeDamageCollider.fireDamage = weapon.fireDamage;
                 meleeDamageCollider.lightningDamage = weapon.lightningDamage;
                 meleeDamageCollider.holyDamage = weapon.holyDamage;
+                meleeDamageCollider.poiseDamage = weapon.poiseDamage;
+                meleeDamageCollider.stanceDamage = weapon.stanceDamage;
 
                 meleeDamageCollider.light_Attack_01_Modifier = weapon.light_Attack_01_Modifier;
                 meleeDamageCollider.light_Attack_02_Modifier = weapon.light_Attack_02_Modifier;
@@ -69,6 +71,8 @@ namespace RK
             collider.fireDamage = weapon.fireDamage;
             collider.lightningDamage = weapon.lightningDamage;
             collider.holyDamage = weapon.holyDamage;
+            collider.poiseDamage = weapon.poiseDamage;
+            collider.stanceDamage = weapon.stanceDamage;
 
             collider.light_Attack_01_Modifier = weapon.light_Attack_01_Modifier;
             collider.light_Attack_02_Modifier = weapon.light_Attack_02_Modifier;

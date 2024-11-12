@@ -4,6 +4,7 @@ using System.Xml.Serialization;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Unity.Netcode;
 using UnityEngine.TextCore.Text;
 using System.Linq;
 using System;
@@ -35,6 +36,8 @@ namespace RK
         [Header("Character Slots")]
         public CharacterSaveData
         characterSlots01, characterSlots02, characterSlots03;
+        [Header("Extra Scene")]
+        [HideInInspector] public float timeLimit = 60.0f;
         private void Awake()
         {
             // このスクリプトのオブジェクトは一度に一つのみ存在
@@ -139,11 +142,16 @@ namespace RK
         /// </summary>
         public void NewGame()
         {
+            // もしNetcode関係でエラーが起きたら以下の行を消す
+            NetworkManager.Singleton.StartHost();
+            // もしNetcode関係でエラーが起きたら以上の行を消す
+
             player.playerNetworkManager.vitality.Value = 15;
             player.playerNetworkManager.endurance.Value = 10;
 
             SaveGame();
-            StartCoroutine(LoadWorldScene(worldSceneIndex));
+            //StartCoroutine(LoadWorldSceneCoroutine(worldSceneIndex));
+            LoadWorldScene(worldSceneIndex);
         }
         /// <summary>
         /// ゲームのロード
@@ -151,6 +159,10 @@ namespace RK
         /// </summary>
         public void LoadGame()
         {
+            // もしNetcode関係でエラーが起きたら以下の行を消す
+            NetworkManager.Singleton.StartHost();
+            // もしNetcode関係でエラーが起きたら以上の行を消す
+
             // どのスロットを使うかによってファイル名を変えて、前のファイルをロードする。
             saveFileName = DecideCharacterFileNameBasedOnCharacterSlotBeingUsed(currentCharacterSlotBeingUsed);
 
@@ -161,7 +173,8 @@ namespace RK
             saveFileDataWriter.saveFileName = saveFileName;
             currentCharacterData = saveFileDataWriter.LoadSaveFile();
 
-            StartCoroutine(LoadWorldScene(worldSceneIndex));
+            //StartCoroutine(LoadWorldSceneCoroutine(worldSceneIndex));
+            LoadWorldScene(worldSceneIndex);
         }
         /// <summary>
         /// ゲームのセーブ
@@ -215,17 +228,80 @@ namespace RK
             saveFileDataWriter.saveFileName = DecideCharacterFileNameBasedOnCharacterSlotBeingUsed(CharacterSlot.CharacterSlot_03);
             characterSlots03 = saveFileDataWriter.LoadSaveFile();
         }
-        public IEnumerator LoadWorldScene(int index)
+
+        public IEnumerator LoadWorldSceneCoroutine(int buildIndex)
         {
             // ワールドシーンを1つだけ作りたい場合
-            AsyncOperation loadOperation = SceneManager.LoadSceneAsync(index);
+            AsyncOperation loadOperation = SceneManager.LoadSceneAsync(buildIndex);
 
             // sセーブデータ毎に異なるシーンを読み込む場合
             // AsyncOperation loadOperation = SceneManager.LoadSceneAsync(currentCharacterData.sceneIndex);
-
-            player.LoadGameDataFromCurrentCharacterData(ref currentCharacterData);
+            if (buildIndex != 0)
+            {
+                PlayerUIManager.instance.ActivateHUD();
+                if (player == null)
+                {
+                    PlayerUIManager.instance.playerUICurrentPTManager.OpenUI();
+                }
+                else
+                {
+                    player.LoadGameDataFromCurrentCharacterData(ref currentCharacterData);
+                }
+            }
+            else
+            {
+                // Netcode関係でもしエラーが起きた場合は以下の行を消してみる
+                PlayerUIManager.instance.DestroyChildAll(PlayerUIManager.instance.playerUIHudManager.characterSlotParent);
+                NetworkManager.Singleton.Shutdown();
+                // もしエラーが起きた場合は以上の行を消す
+                PlayerUIManager.instance.InActivateHUD();
+            }
             yield return null;
         }
+
+
+        public void LoadWorldScene(int buildIndex)
+        {
+            string worldScene = SceneUtility.GetScenePathByBuildIndex(buildIndex);
+            Debug.Log(NetworkManager.Singleton.SceneManager);
+            if (NetworkManager.Singleton.SceneManager == null)
+            {
+                AsyncOperation loadOperation = SceneManager.LoadSceneAsync(buildIndex);
+            }
+            else
+            {
+                if (!player.IsServer)
+                {
+                    AsyncOperation loadOperation = SceneManager.LoadSceneAsync(buildIndex);
+                }
+                else
+                {
+                    NetworkManager.Singleton.SceneManager.LoadScene(worldScene, LoadSceneMode.Single);
+                }
+            }
+
+            if (buildIndex != 0)
+            {
+                PlayerUIManager.instance.ActivateHUD();
+                if (player == null)
+                {
+                    PlayerUIManager.instance.playerUICurrentPTManager.OpenUI();
+                }
+                else
+                {
+                    player.LoadGameDataFromCurrentCharacterData(ref currentCharacterData);
+                }
+            }
+            else
+            {
+                // Netcode関係でもしエラーが起きた場合は以下の行を消してみる
+                PlayerUIManager.instance.DestroyChildAll(PlayerUIManager.instance.playerUIHudManager.characterSlotParent);
+                NetworkManager.Singleton.Shutdown();
+                // もしエラーが起きた場合は以上の行を消す
+                PlayerUIManager.instance.InActivateHUD();
+            }
+        }
+
 
         public int GetWorldSceneIndex()
         {
@@ -238,7 +314,25 @@ namespace RK
         }
 
         // extra sceneの作成
-        public void CreateExtraScene()
+        public void CreateExtraScene(float timeLimit)
+        {
+            // もしNetcode関係でエラーが起きたら以下の行を消す
+            NetworkManager.Singleton.StartHost();
+            // もしNetcode関係でエラーが起きたら以上の行を消す
+            this.timeLimit = timeLimit;
+            currentCharacterData = new CharacterSaveData();
+            player.transform.position = new Vector3(0, 0, 0);
+            player.playerNetworkManager.vitality.Value = 20;
+            player.playerNetworkManager.endurance.Value = 20;
+            player.playerNetworkManager.currentHealth.Value = player.playerNetworkManager.maxHealth.Value;
+            player.playerNetworkManager.currentStamina.Value = player.playerNetworkManager.maxStamina.Value;
+            player.inventory.itemsInInventory.Clear();
+            player.SaveGameDataToCurrentCharacterData(ref currentCharacterData);
+
+            //StartCoroutine(LoadWorldSceneCoroutine(extraSceneIndex));
+            LoadWorldScene(extraSceneIndex);
+        }
+        public void ExtraScene(int buildIndex)
         {
             currentCharacterData = new CharacterSaveData();
             player.transform.position = new Vector3(0, 0, 0);
@@ -246,9 +340,16 @@ namespace RK
             player.playerNetworkManager.endurance.Value = 20;
             player.playerNetworkManager.currentHealth.Value = player.playerNetworkManager.maxHealth.Value;
             player.playerNetworkManager.currentStamina.Value = player.playerNetworkManager.maxStamina.Value;
+            player.inventory.itemsInInventory.Clear();
             player.SaveGameDataToCurrentCharacterData(ref currentCharacterData);
 
-            StartCoroutine(LoadWorldScene(extraSceneIndex));
+            string worldScene = SceneUtility.GetScenePathByBuildIndex(buildIndex);
+            NetworkManager.Singleton.SceneManager.LoadScene(worldScene, LoadSceneMode.Single);
+        }
+        public void CreateMainMenu()
+        {
+            //StartCoroutine(LoadWorldSceneCoroutine(0));
+            LoadWorldScene(0);
         }
     }
 }

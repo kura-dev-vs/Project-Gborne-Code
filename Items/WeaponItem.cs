@@ -7,10 +7,16 @@ namespace RK
     /// <summary>
     /// itemを継承した武器専用
     /// </summary>
-    public class WeaponItem : Item
+    public class WeaponItem : EquipmentItem
     {
+        [Header("Animations")]
+        public AnimatorOverrideController weaponAnimator;
+        [Header("Model Instantiation")]
+        public WeaponModelType weaponModelType;
         [Header("Weapon Model")]
         public GameObject weaponModel;
+        [Header("Weapon Class")]
+        public WeaponClass weaponClass;
         [Header("Weapon Requirements")]
         public int strengthREQ = 0;
         public int dexREQ = 0;
@@ -27,6 +33,7 @@ namespace RK
         [Header("Weapon Poise")]
         // 攻撃時、よろけていたらダメージ増加
         public float poiseDamage = 10;
+        public float stanceDamage = 10;
 
         [Header("Attack Modifiers")]
         public float light_Attack_01_Modifier = 1.0f;
@@ -40,6 +47,9 @@ namespace RK
         public float running_Attack_01_Modifier = 1.1f;
         public float rolling_Attack_01_Modifier = 1.1f;
         public float backstep_Attack_01_Modifier = 1.1f;
+        public float riposte_Attack_01_Modifier = 3.3f;
+        public float backstab_Attack_01_Modifier = 3.3f;
+
 
         [Header("Stamina Costs")]
         public int baseStaminaCost = 20;
@@ -50,6 +60,15 @@ namespace RK
         public float rollingAttackStaminaCostMultiplier = 1.1f;
         public float backstepAttackStaminaCostMultiplier = 1.1f;
 
+        [Header("Weapon Blocking Absorption")]
+        public float physicalBaseDamageAbsorption = 50;
+        public float magicBaseDamageAbsorption = 50;
+        public float fireBaseDamageAbsorption = 50;
+        public float holyBaseDamageAbsorption = 50;
+        public float lightningBaseDamageAbsorption = 50;
+        public float stability = 50;    // ブロック動作で減少するスタミナ
+
+
         // 武器アイテムの持つアクション
         [Header("Actions")]
         public WeaponItemAction oh_RB_Action;   // RBアクション
@@ -59,6 +78,7 @@ namespace RK
         // 武器を振ったときの音
         [Header("Whooshes")]
         public AudioClip[] whooshes;
+        public AudioClip[] blocking;
 
         // 遠距離武器用のオプション
         [Header("Bullet (Ranged Option)")]

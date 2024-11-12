@@ -4,9 +4,13 @@ using UnityEngine;
 
 namespace RK
 {
-    public class UICamara : MonoBehaviour
+    public class UI3DCamera : MonoBehaviour
     {
-        public static UICamara instance;
+        // 固定
+        // localposition = (0,2,0)
+        // localrotation = 10,0,0
+        public static UI3DCamera instance;
+        public Camera mainCamera;
         private void Awake()
         {
             if (instance == null)
@@ -21,7 +25,7 @@ namespace RK
         private void Start()
         {
             DontDestroyOnLoad(gameObject);
-
+            mainCamera = GetComponentInChildren<Camera>();
         }
     }
 }

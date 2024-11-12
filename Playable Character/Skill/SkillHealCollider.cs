@@ -13,8 +13,6 @@ namespace RK
         [SerializeField] protected Collider healCollider;
         [Header("Heal")]
         public float baseHeal = 0;
-        public float durationTime = 0;
-        float timeCount = 0;
         [Header("Characters Healed")]
         [SerializeField] protected List<CharacterManager> charactersHealed = new List<CharacterManager>();
         [Header("Healing Character")]
@@ -32,6 +30,8 @@ namespace RK
         private void Update()
         {
             // durationTimeの間隔でリストをリセットし、回復を行う
+            if (resetListPermission == false)
+                return;
             if (durationTime != 0)
             {
                 timeCount += Time.deltaTime;
@@ -41,7 +41,6 @@ namespace RK
                     timeCount = 0;
                 }
             }
-
         }
         protected virtual void OnTriggerStay(Collider other)
         {

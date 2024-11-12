@@ -44,6 +44,8 @@ namespace RK
         protected override void Update()
         {
             base.Update();
+            if (player.playerAnimatorManager == null)
+                return;
 
             if (player.IsOwner)
             {
@@ -88,19 +90,12 @@ namespace RK
                 return;
 
             // カメラの方向から、X-Z平面の単位ベクトルを取得
-            moveDirection = Vector3.Scale(PlayerCamera.instance.transform.forward, new Vector3(1, 0, 1)).normalized;
+            moveDirection = Vector3.Scale(PlayerCamera.instance.mainCamera.transform.forward, new Vector3(1, 0, 1)).normalized * verticalMovement;
             // 方向キーの入力値とカメラの向きから、移動方向を決定
-            moveDirection = moveDirection * verticalMovement + PlayerCamera.instance.transform.right * horizontalMovement;
+            moveDirection = moveDirection + Vector3.Scale(PlayerCamera.instance.mainCamera.transform.right, new Vector3(1, 0, 1)).normalized * horizontalMovement;
 
-            //Quaternion cameraRot = PlayerCamera.instance.transform.rotation;
-            //cameraRot.x = 0;
-
-            //moveDirection = PlayerCamera.instance.transform.forward * verticalMovement;
-            //moveDirection = moveDirection + PlayerCamera.instance.transform.right * horizontalMovement;
-
-
-            moveDirection.Normalize();
             moveDirection.y = 0;
+            moveDirection.Normalize();
 
             if (player.playerNetworkManager.isSprinting.Value)
             {
@@ -153,10 +148,11 @@ namespace RK
                 if (player.playerNetworkManager.isSprinting.Value || player.playerLocomotionManager.isRolling)
                 {
                     Vector3 targetDirection;
-                    targetDirection = PlayerCamera.instance.cameraObject.transform.forward * verticalMovement;
-                    targetDirection += PlayerCamera.instance.cameraObject.transform.right * horizontalMovement;
-                    targetDirection.Normalize();
-                    targetDirection.y = 0;
+
+                    // カメラの方向から、X-Z平面の単位ベクトルを取得
+                    targetDirection = Vector3.Scale(PlayerCamera.instance.mainCamera.transform.forward, new Vector3(1, 0, 1)).normalized;
+                    // 方向キーの入力値とカメラの向きから、移動方向を決定
+                    targetDirection = targetDirection * verticalMovement + PlayerCamera.instance.mainCamera.transform.right * horizontalMovement;
 
                     if (targetDirection == Vector3.zero)
                     {
@@ -183,11 +179,10 @@ namespace RK
             }
             else
             {
-                targetRotationDirection = Vector3.zero;
-                targetRotationDirection = PlayerCamera.instance.cameraObject.transform.forward * verticalMovement;
-                targetRotationDirection = targetRotationDirection + PlayerCamera.instance.cameraObject.transform.right * horizontalMovement;
-                targetRotationDirection.Normalize();
-                targetRotationDirection.y = 0;
+                // カメラの方向から、X-Z平面の単位ベクトルを取得
+                targetRotationDirection = Vector3.Scale(PlayerCamera.instance.transform.forward, new Vector3(1, 0, 1)).normalized;
+                // 方向キーの入力値とカメラの向きから、移動方向を決定
+                targetRotationDirection = targetRotationDirection * verticalMovement + PlayerCamera.instance.transform.right * horizontalMovement;
 
                 if (targetRotationDirection == Vector3.zero)
                 {

@@ -17,7 +17,7 @@ namespace RK
         [Header("Damage Sounds")]
         public AudioClip[] physicalDamageSFX;
         [Header("Action Sounds")]
-        public AudioClip rollSFX, stepSFX, spawnSFX;
+        public AudioClip rollSFX, stepSFX, spawnSFX, pickUpItemSFX, stanceBreakSFX, criticalStrikeSFX;
         [Header("Heal Sound")]
         public AudioClip healSFX;
         [Header("Energy Sound")]
@@ -61,6 +61,11 @@ namespace RK
             bossLoopPlayer.clip = loopTrack;
             bossLoopPlayer.loop = true;
             bossLoopPlayer.PlayDelayed(bossIntroPlayer.clip.length);
+        }
+        public void StopAudio()
+        {
+            bossIntroPlayer.Stop();
+            bossLoopPlayer.Stop();
         }
         public void StopBossMusic()
         {

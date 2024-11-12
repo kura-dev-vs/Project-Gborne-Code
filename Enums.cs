@@ -21,10 +21,31 @@ public enum Skill_BurstSlot
 }
 public enum WeaponModelSlot
 {
-    RightHand, LeftHand, RightLeg, LeftLeg,
+    RightHand, LeftHandWeaponSlot, LeftHandShieldSlot, backRightSlot, backLeftSlot, RightLeg, LeftLeg,
     //Right Hips
     //Left Hips
     //Back
+}
+public enum WeaponModelType
+{
+    Weapon, Shield
+}
+public enum WeaponClass
+{
+    StraightSword,
+    Spear,
+    Gun,
+    MediumShield,
+    Fist
+}
+public enum EquipmentType
+{
+    Null,
+    RightWeapon01, RightWeapon02, RightWeapon03,
+    LeftWeapon01, LeftWeapon02, LeftWeapon03,
+    Hat, Jacket, Tops, Bottoms, Shoes
+
+
 }
 // this is used to calculate damage based on attack type
 public enum AttackType
@@ -38,3 +59,18 @@ public enum AttackType
     Skill,
     Burst
 }
+public enum DamageIntensity
+{
+    Ping, Light, Medium, Heavy, Colossal
+}
+public enum Outfit
+{
+    Hat, Jacket, Tops, Bottoms, Shoes
+}
+
+public enum ItemPickUpType
+{
+    worldSpawn,
+    CharacterDrop
+}
+

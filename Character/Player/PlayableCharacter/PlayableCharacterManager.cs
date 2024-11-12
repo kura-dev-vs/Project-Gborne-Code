@@ -39,13 +39,14 @@ namespace RK
         /// <param name="playableCharacter"></param>
         public void SetCharacterInformation(EntryManager entryManager, PlayableCharacter playableCharacter)
         {
-            playableCharacterID = playableCharacter.playableCharacterID;
+            playableCharacterID = playableCharacter.pcID;
             this.playableCharacter = playableCharacter;
             playerAnimatorManager.SetManager();
             playerEquipmentManager.SetManger();
             playerEffectsManager.SetManager();
             animationEventTentative.SetManger();
             playerSoundFXManager.SetAudioSource();
+            playerStatsManager.SetManager();
         }
     }
 }

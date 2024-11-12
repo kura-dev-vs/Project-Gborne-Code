@@ -21,14 +21,16 @@ namespace RK
 
         bool spawnFlag = false;
         bool coroutineFlag = false;
-        [SerializeField] float limitTime = 60.0f;
+        [SerializeField] float timeLimit = 60.0f;
+        bool allowCountDown = false;
         float currentTime = 0f;
         [SerializeField] GameObject timeUI;
         GameObject time;
         private void Start()
         {
-            PlayerUIManager.instance.OpenMenuUI(PlayerCamera.instance.player.entry);
+            PlayerUIManager.instance.OpenMenuUI();
             time = Instantiate(timeUI, PlayerUIManager.instance.playerUIHudManager.scoreParent);
+            timeLimit = WorldSaveGameManager.instance.timeLimit;
         }
         private void OnDestroy()
         {
@@ -38,12 +40,13 @@ namespace RK
         private void Update()
         {
             currentTime += Time.deltaTime;
-            time.GetComponentInChildren<TextMeshProUGUI>().SetText((limitTime - currentTime).ToString("N2"));
+            time.GetComponentInChildren<TextMeshProUGUI>().SetText((timeLimit - currentTime).ToString("N2"));
 
-            if (limitTime < currentTime)
+            if (timeLimit < currentTime)
             {
                 PlayerUIManager.instance.playerUIPopUpManager.SendScorePopUp();
                 Time.timeScale = 0f;
+                currentTime = 0;
             }
             if (WorldAIManager.instance.spawnedInCharacters.Count == 0)
             {

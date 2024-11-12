@@ -69,7 +69,7 @@ namespace RK
             currentTime -= Time.deltaTime;
             if (currentTime < 0f)
             {
-                return;
+                currentTime = 0.1f;
             }
 
             velocity += acceleration * Time.deltaTime;

@@ -12,5 +12,20 @@ namespace RK
     public class AICharacterNetworkManager : CharacterNetworkManager
     {
         //public NetworkVariable<bool> isMoving = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        AICharacterManager aICharacter;
+        protected override void Awake()
+        {
+            base.Awake();
+
+            aICharacter = GetComponent<AICharacterManager>();
+        }
+
+        public override void OnIsDeadChanged(bool oldStatus, bool newStatus)
+        {
+            base.OnIsDeadChanged(oldStatus, newStatus);
+
+            aICharacter.aICharacterInventoryManager.DropItem();
+        }
     }
 }

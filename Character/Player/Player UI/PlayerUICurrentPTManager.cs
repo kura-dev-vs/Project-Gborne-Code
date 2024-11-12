@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
@@ -25,39 +26,49 @@ namespace RK
         public bool uiActivity = false;
         EntryManager entry;
         [SerializeField] GameObject first_Slot;
+        public Slider hpSlider;
+        public Slider stSlider;
 
         public void OpenUI()
         {
+            if (NetworkManager.Singleton.LocalClient.PlayerObject != null)
+                if (entry == null)
+                    entry = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerManager>().entry;
+
             Time.timeScale = 0f;
-            for (int i = 0; i < entry.playableCharacterEntryNetworkManager.currentPTID.Count; i++)
-                currentPTID[i] = entry.playableCharacterEntryNetworkManager.currentPTID[i];
-            RefreshCurrentPTUI(currentPTID);
             uiActivity = true;
             ptSetUI.SetActive(true);
+            if (entry != null)
+            {
+                for (int i = 0; i < entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList.Count; i++)
+                    currentPTID[i] = entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList[i];
+                RefreshCurrentPTUI(currentPTID);
+            }
+
             PlayerUIManager.instance.playerUIHudManager.gameObject.SetActive(false);
             EventSystemManager.instance.eventSystem.SetSelectedGameObject(first_Slot);
+
+            PlayerUIManager.instance.multiplayerTentativeScript.GetLocalIPAddress();
+            if (PlayerCamera.instance.player != null)
+            {
+                hpSlider.value = PlayerCamera.instance.player.playerNetworkManager.vitality.Value;
+                stSlider.value = PlayerCamera.instance.player.playerNetworkManager.endurance.Value;
+            }
         }
         public void CloseUI()
         {
             Time.timeScale = 1f;
-            PlayerUIManager.instance.playerUISelectableCharacterManager.CloseUI();
             uiActivity = false;
-            ptSetUI.SetActive(false);
+            PlayerUIManager.instance.playerUIPCInfoManager.CloseUI();
+            PlayerUIManager.instance.playerUISelectableCharacterManager.CloseUI();
             PlayerUIManager.instance.playerUIHudManager.gameObject.SetActive(true);
-        }
-        public void UIActivity(EntryManager entryManager)
-        {
-            if (entry == null)
-                entry = entryManager;
 
-            if (uiActivity)
+            if (!(NetworkManager.Singleton.LocalClient.PlayerObject == null))
             {
-                CloseUI();
+                PlayerCamera.instance.player.playerNetworkManager.vitality.Value = (int)hpSlider.value;
+                PlayerCamera.instance.player.playerNetworkManager.endurance.Value = (int)stSlider.value;
             }
-            else
-            {
-                OpenUI();
-            }
+            ptSetUI.SetActive(false);
         }
         /// <summary>
         /// UI更新時に表示するキャラクターの情報を変更する。
@@ -88,7 +99,11 @@ namespace RK
         /// </summary>
         public void ClickPTSlots()
         {
-            PlayerUIManager.instance.playerUISelectableCharacterManager.UIActivity(entry);
+            PlayerUIManager.instance.playerUISelectableCharacterManager.OpenUI();
+        }
+        public void ClickPCInfo()
+        {
+            PlayerUIManager.instance.playerUIPCInfoManager.OpenUI();
         }
         public void Deployed()
         {
@@ -96,34 +111,87 @@ namespace RK
         }
         public void Back()
         {
-            UIActivity(entry);
+            CloseUI();
         }
         public void Restart()
         {
+            PlayerManager player = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerManager>();
             WorldAIManager.instance.DespawnALLCharacters();
+            WorldSoundFXManager.instance.StopBossMusic();
+            if (player.isDead.Value)
+            {
+                player.respawnCharacter = true;
+            }
             if (SceneManager.GetActiveScene().buildIndex == 2)
             {
-                entry.player.respawnCharacter = true;
-                WorldSaveGameManager.instance.CreateExtraScene();
+                WorldSaveGameManager.instance.CreateExtraScene(WorldSaveGameManager.instance.timeLimit);
+                //WorldSaveGameManager.instance.ExtraScene(2);
+                entry.playableCharacterInventoryManager.RefreshDeployedPT();
             }
             else
             {
-                WorldSaveGameManager.instance.LoadGame();
-                entry.player.respawnCharacter = true;
+                player.playerNetworkManager.currentHealth.Value = player.playerNetworkManager.maxHealth.Value;
+                player.playerNetworkManager.currentStamina.Value = player.playerNetworkManager.maxStamina.Value;
+
+                CharacterSaveData data = WorldSaveGameManager.instance.currentCharacterData;
+
+                string worldScene = SceneUtility.GetScenePathByBuildIndex(data.sceneIndex);
+                NetworkManager.Singleton.SceneManager.LoadScene(worldScene, LoadSceneMode.Single);
+                Vector3 myPosition = new Vector3(data.xPosition, data.yPosition, data.zPosition);
+                player.transform.position = myPosition;
             }
-            entry.player.playerNetworkManager.currentScore.Value = 0;
+            player.playerNetworkManager.currentScore.Value = 0;
+        }
+        public void BackMainMenu()
+        {
+            CloseUI();
+            WorldAIManager.instance.DespawnALLCharacters();
+            WorldSoundFXManager.instance.StopAudio();
+            Destroy(EventSystemManager.instance.gameObject);
+            WorldSaveGameManager.instance.CreateMainMenu();
+            //NetworkManager.Singleton.Shutdown();
         }
         public void ButtonsInteractable(bool isInteractable)
         {
+            /*
             Button[] buttons = GetComponentsInChildren<Button>();
             foreach (var button in buttons)
             {
                 button.interactable = isInteractable;
             }
+            Slider[] sliders = GetComponentsInChildren<Slider>();
+            foreach (var slider in sliders)
+            {
+                slider.interactable = isInteractable;
+            }
+            TMP_InputField[] inputFields = GetComponentsInChildren<TMP_InputField>();
+            foreach (var inputField in inputFields)
+            {
+                inputField.interactable = isInteractable;
+            }
+
+
             if (isInteractable)
             {
                 EventSystemManager.instance.eventSystem.SetSelectedGameObject(first_Slot);
             }
+            */
+
+            GetComponent<CanvasGroup>().interactable = isInteractable;
+            if (isInteractable)
+            {
+                GetComponent<CanvasGroup>().alpha = 1;
+            }
+            else
+            {
+                GetComponent<CanvasGroup>().alpha = 0;
+            }
+        }
+
+        public void StartClientButton()
+        {
+            PlayerUIManager.instance.StartClient();
+            CloseUI();
         }
     }
 }

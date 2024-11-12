@@ -16,6 +16,7 @@ namespace RK
         [SerializeField] float transparentAlpha = 0.3f;
         [SerializeField] float opacityAlpha = 1f;
         [SerializeField] Image icon;
+        [SerializeField] GameObject energyEffect;
 
         private void Start()
         {
@@ -27,11 +28,15 @@ namespace RK
             {
                 backGround.color = new Color(backGround.color.r, backGround.color.g, backGround.color.b, opacityAlpha);
                 icon.color = new Color(icon.color.r, icon.color.g, icon.color.b, opacityAlpha);
+                energyEffect.SetActive(true);
+                return;
             }
             else
             {
                 backGround.color = new Color(backGround.color.r, backGround.color.g, backGround.color.b, transparentAlpha);
                 icon.color = new Color(icon.color.r, icon.color.g, icon.color.b, transparentAlpha);
+                energyEffect.SetActive(false);
+                return;
             }
         }
         public void SetEnergyValue(float newValue)

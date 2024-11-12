@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
 using System;
+using Unity.Netcode;
 
 
 namespace RK
@@ -29,35 +30,21 @@ namespace RK
         public Button savePT;
         GameObject tmpIcon;
         [SerializeField] GameObject selectablePC_UI;
-        bool uiActivity = false;
         EntryManager entry;
-        public void UIActivity(EntryManager entryManager)
-        {
-            if (entry == null)
-                entry = entryManager;
-
-            if (uiActivity)
-            {
-                CloseUI();
-            }
-            else
-            {
-                OpenUI();
-            }
-        }
         public void OpenUI()
         {
+            if (entry == null)
+                entry = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerManager>().entry;
+
             SetPCIcons();
-            uiActivity = true;
             selectablePC_UI.SetActive(true);
             PlayerUIManager.instance.playerUICurrentPTManager.ButtonsInteractable(false);
         }
         public void CloseUI()
         {
             DestroyChildAll(pCLists.transform);
-            uiActivity = false;
-            selectablePC_UI.SetActive(false);
             PlayerUIManager.instance.playerUICurrentPTManager.ButtonsInteractable(true);
+            selectablePC_UI.SetActive(false);
         }
 
         /// <summary>
@@ -71,8 +58,8 @@ namespace RK
             if (characterIcon == null)
                 return;
 
-            for (int i = 0; i < entry.playableCharacterEntryNetworkManager.currentPTID.Count; i++)
-                currentPTID[i] = entry.playableCharacterEntryNetworkManager.currentPTID[i];
+            for (int i = 0; i < entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList.Count; i++)
+                currentPTID[i] = entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList[i];
             Array.Copy(currentPTID, changedPTID, 4);
 
             ComparisonPT();
@@ -83,7 +70,7 @@ namespace RK
                 icon.pc = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(i);
                 icon.faceIcon.sprite = icon.pc.faceIcon;
 
-                int ptIndex = CheckPTJoined(icon.pc.playableCharacterID);
+                int ptIndex = CheckPTJoined(icon.pc.pcID);
                 icon.numberInPT = ptIndex;
                 if (ptIndex != -1)
                 {
@@ -103,6 +90,11 @@ namespace RK
                 Destroy(child.gameObject);
             }
         }
+        /// <summary>
+        /// 引数のIDが既に加入しているかどうか。していればPTの何番目かを返す
+        /// </summary>
+        /// <param name="pcID"></param>
+        /// <returns></returns> 
         public int CheckPTJoined(int pcID)
         {
             int result = Array.IndexOf(changedPTID, pcID);
@@ -114,7 +106,7 @@ namespace RK
         }
         public void Back()
         {
-            UIActivity(entry);
+            CloseUI();
         }
 
         /// <summary>
@@ -126,20 +118,21 @@ namespace RK
                 return;
             if (entry.player.isDead.Value)
                 return;
-            bool result = changedPTID.All(x => x == WorldPlayableCharacterDatabase.instance.NoCharacter.playableCharacterID);
+            bool result = changedPTID.All(x => x == WorldPlayableCharacterDatabase.instance.NoCharacter.pcID);
             if (result)
             {
                 Debug.Log("キャラクターを最低一人以上は選択してください。");
                 return;
             }
             Array.Copy(changedPTID, currentPTID, 4);
-            for (int i = 0; i < entry.playableCharacterEntryNetworkManager.currentPTID.Count; i++)
+            Array.Copy(currentPTID, NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<EntryManager>().playableCharacterEntryNetworkManager.currentPTIDForSaveAndLoad, 4);
+            for (int i = 0; i < entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList.Count; i++)
             {
-                entry.playableCharacterEntryNetworkManager.currentPTID[i] = currentPTID[i];
-                entry.playableCharacterInventoryManager.currentPCPT[i] = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(entry.playableCharacterEntryNetworkManager.currentPTID[i]);
+                entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList[i] = currentPTID[i];
+                entry.playableCharacterInventoryManager.currentPCPT[i] = WorldPlayableCharacterDatabase.instance.GetPlayableCharacterByID(entry.playableCharacterEntryNetworkManager.currentPTIDNetworkList[i]);
             }
 
-            DestroyChildAll(PlayerUIManager.instance.playerUIHudManager.characterSlotParent);
+            PlayerUIManager.instance.DestroyChildAll(PlayerUIManager.instance.playerUIHudManager.characterSlotParent);
             PlayerUIManager.instance.playerUICurrentPTManager.RefreshCurrentPTUI(currentPTID);
             ComparisonPT();
             entry.playableCharacterInventoryManager.RefreshDeployedPT();

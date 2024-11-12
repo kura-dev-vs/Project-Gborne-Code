@@ -42,14 +42,14 @@ namespace RK
             }
             playableCharacterEntryNetworkManager.currentPlayableCharacterID.OnValueChanged += playableCharacterEntryNetworkManager.OnCurrentPlayableCharacterIDChange;
             playableCharacterEntryNetworkManager.resetPTFire.OnValueChanged += playableCharacterEntryNetworkManager.OnCurrentResetPTFireChange;
-            playableCharacterEntryNetworkManager.currentPTID.OnListChanged += playableCharacterEntryNetworkManager.OnCurrentPTIDChanged;
+            playableCharacterEntryNetworkManager.currentPTIDNetworkList.OnListChanged += playableCharacterEntryNetworkManager.OnCurrentPTIDChanged;
         }
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
             playableCharacterEntryNetworkManager.currentPlayableCharacterID.OnValueChanged -= playableCharacterEntryNetworkManager.OnCurrentPlayableCharacterIDChange;
             playableCharacterEntryNetworkManager.resetPTFire.OnValueChanged -= playableCharacterEntryNetworkManager.OnCurrentResetPTFireChange;
-            playableCharacterEntryNetworkManager.currentPTID.OnListChanged -= playableCharacterEntryNetworkManager.OnCurrentPTIDChanged;
+            playableCharacterEntryNetworkManager.currentPTIDNetworkList.OnListChanged -= playableCharacterEntryNetworkManager.OnCurrentPTIDChanged;
         }
     }
 }

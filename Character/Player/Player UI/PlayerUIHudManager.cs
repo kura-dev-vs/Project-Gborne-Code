@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,6 +14,7 @@ namespace RK
     /// </summary>
     public class PlayerUIHudManager : MonoBehaviour
     {
+        [SerializeField] CanvasGroup[] canvasGroups;
         [Header("STAT BARS")]
         [SerializeField] UI_StatBar healthBar;
         [SerializeField] UI_StatBar staminaBar;
@@ -42,15 +44,43 @@ namespace RK
         [SerializeField] float transparentAlpha = 0.3f;
         [SerializeField] float opacityAlpha = 1f;
 
-        [Header("Character Slot")]
+        [Header("Character Slots")]
         public Transform characterSlotParent;
         [SerializeField] GameObject characterSlotObject;
+
+        [Header("Just Got Item Slots")]
+        public Transform justGotItemSlotParent;
+        [SerializeField] GameObject justGotItemInfoObject;
+
+        [Header("Interaction Slots")]
+        public Transform interactionSlotParent;
+        [SerializeField] GameObject interactionMessageObject;
+        public List<GameObject> currentInteractionList;
+
         [Header("Score")]
         public Transform scoreParent;
         public TextMeshProUGUI score;
 
         [Header("LockOn")]
         public GameObject lockOnCursor;
+
+        public void ToggleHUD(bool status)
+        {
+            if (status)
+            {
+                foreach (var canvas in canvasGroups)
+                {
+                    canvas.alpha = 1;
+                }
+            }
+            else
+            {
+                foreach (var canvas in canvasGroups)
+                {
+                    canvas.alpha = 0;
+                }
+            }
+        }
 
         public void RefreshHUD()
         {
@@ -99,6 +129,7 @@ namespace RK
             }
 
             // 上記の警告をUIで出す場合ここに書く(検討中)
+            Debug.Log("change");
 
             rightWeaponQuickSlotIcon.sprite = weapon.itemIcon;
             rightWeaponQuickSlotIcon.enabled = true;
@@ -208,6 +239,47 @@ namespace RK
         {
             var marker = Instantiate(characterSlotObject, characterSlotParent);
             marker.GetComponent<CharacterSlotManager>().SetInformation(ptIndex, characterID);
+        }
+        public void SetJustGotItemSlotUI(Item item, int amount)
+        {
+            var marker = Instantiate(justGotItemInfoObject, justGotItemSlotParent);
+            marker.GetComponent<JustGotItemManager>().SetItemInformation(item, amount);
+        }
+        public void SetInteractionMessageSlotUI(Interactable interactable)
+        {
+            var marker = Instantiate(interactionMessageObject, interactionSlotParent);
+            marker.GetComponent<InteractionMessage>().SetInteractionInformation(interactable);
+            currentInteractionList.Add(marker);
+        }
+        public void RemoveInteractionMessageSlotUI(int removeNum)
+        {
+            Destroy(currentInteractionList[removeNum]);
+            currentInteractionList.RemoveAt(removeNum);
+        }
+        public void ResetInteractionMessageSlotUI()
+        {
+            if (!(currentInteractionList.Count == 0))
+            {
+                for (int i = 0; i < currentInteractionList.Count; i++)
+                {
+                    Destroy(currentInteractionList[i]);
+                    currentInteractionList.RemoveAt(i);
+                }
+            }
+        }
+        public void RefreshSelectingInteraction(int currentSelectingIndex)
+        {
+            for (int i = 0; i < currentInteractionList.Count; i++)
+            {
+                if (i == currentSelectingIndex)
+                {
+                    currentInteractionList[i].GetComponent<InteractionMessage>().selectingFrame.SetActive(true);
+                }
+                else
+                {
+                    currentInteractionList[i].GetComponent<InteractionMessage>().selectingFrame.SetActive(false);
+                }
+            }
         }
         public void SetScore(int newScore)
         {

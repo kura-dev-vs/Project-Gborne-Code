@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.UI;
 using System.Data.Common;
+using TMPro;
 
 namespace RK
 {
@@ -31,6 +32,10 @@ namespace RK
 
         [Header("Title Screen Inputs")]
         [SerializeField] bool deleteCharacterSlot = false;
+
+        [Header("Extra Scene")]
+        [SerializeField] TextMeshProUGUI timeLimit;
+        public Slider timeSlider;
         private void Awake()
         {
             if (instance == null)
@@ -42,9 +47,15 @@ namespace RK
                 Destroy(gameObject);
             }
         }
+        private void Update()
+        {
+            timeLimit.SetText("{0}", timeSlider.value);
+        }
         public void StartNetworkAsHost()
         {
-            NetworkManager.Singleton.StartHost();
+            // 一旦以下の行は消しているがNetcode関係でエラーが起きた場合はWorldSaveGameManagerのNewGame(), LoadGame(), ExtraGame()を直したあと以下を復活させる
+            //NetworkManager.Singleton.StartHost();
+            // 一旦以上の行は消しているがNetcode関係でエラーが起きた場合はWorldSaveGameManagerのNewGame(), LoadGame(), ExtraGame()を直したあと以上を復活させる
         }
         public void StartNewGame()
         {
@@ -110,7 +121,15 @@ namespace RK
 
         public void StartExtraGame()
         {
-            WorldSaveGameManager.instance.CreateExtraScene();
+            WorldSaveGameManager.instance.CreateExtraScene(timeSlider.value);
+        }
+        public void ExitGame()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;//ゲームプレイ終了
+#else
+    Application.Quit();//ゲームプレイ終了
+#endif
         }
     }
 }

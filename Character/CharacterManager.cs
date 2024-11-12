@@ -21,6 +21,7 @@ namespace RK
         [HideInInspector] public CharacterEffectsManager characterEffectsManager;
         [HideInInspector] public CharacterAnimatorManager characterAnimatorManager;
         [HideInInspector] public CharacterCombatManager characterCombatManager;
+        [HideInInspector] public CharacterStatsManager characterStatsManager;
         [HideInInspector] public CharacterSoundFXManager characterSoundFXManager;
         [HideInInspector] public CharacterLocomotionManager characterLocomotionManager;
         [Header("Character Group")]
@@ -46,6 +47,7 @@ namespace RK
             characterEffectsManager = GetComponent<CharacterEffectsManager>();
             characterAnimatorManager = GetComponent<CharacterAnimatorManager>();
             characterCombatManager = GetComponent<CharacterCombatManager>();
+            characterStatsManager = GetComponent<CharacterStatsManager>();
             characterSoundFXManager = GetComponent<CharacterSoundFXManager>();
             characterLocomotionManager = GetComponent<CharacterLocomotionManager>();
             myLockOnTransform = GetComponentInChildren<LockOnTransform>();
@@ -99,14 +101,21 @@ namespace RK
                 animator.SetBool("isMoving", characterNetworkManager.isMoving.Value);
             }
             characterNetworkManager.OnIsActiveChanged(false, characterNetworkManager.isActive.Value);
+
+            isDead.OnValueChanged += characterNetworkManager.OnIsDeadChanged;
             characterNetworkManager.isMoving.OnValueChanged += characterNetworkManager.OnIsMovingChanged;
             characterNetworkManager.isActive.OnValueChanged += characterNetworkManager.OnIsActiveChanged;
+            characterNetworkManager.isRipostable.OnValueChanged += characterNetworkManager.OnIsRipostableChanged;
+
         }
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+            isDead.OnValueChanged -= characterNetworkManager.OnIsDeadChanged;
             characterNetworkManager.isMoving.OnValueChanged -= characterNetworkManager.OnIsMovingChanged;
             characterNetworkManager.isActive.OnValueChanged -= characterNetworkManager.OnIsActiveChanged;
+            characterNetworkManager.isRipostable.OnValueChanged -= characterNetworkManager.OnIsRipostableChanged;
+
         }
 
         public virtual IEnumerator ProcessDeathEvent(bool manuallySelectDamageAnimation = false)

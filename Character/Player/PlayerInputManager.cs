@@ -24,6 +24,7 @@ namespace RK
         [SerializeField] Vector2 camera_Input;
         public float cameraVertical_Input;
         public float cameraHorizontal_Input;
+        [SerializeField] float cameraZoom;
 
         [Header("LOCK ON INPUT")]
         [SerializeField] bool lockOn_Input;
@@ -44,15 +45,20 @@ namespace RK
         [SerializeField] bool jump_Input = false;
         [SerializeField] bool switch_Right_Weapon_Input = false;
         [SerializeField] bool switch_Left_Weapon_Input = false;
+        [SerializeField] bool interaction_Input = false;
 
         [Header("BUMPER INPUTS")]
         [SerializeField] bool RB_Input = false;
         [SerializeField] bool LB_Input = false;
+        [SerializeField] bool Burst_Input = false;
 
         [Header("TRIGGER INPUTS")]
         [SerializeField] bool RT_Input = false;
         [SerializeField] bool LT_Input = false;
         [SerializeField] bool Hold_RT_Input = false;
+
+        [Header("BUMPER INPUTS")]
+        [SerializeField] bool power_Ups_Input = false;
 
         [Header("QUED INPUTS")]
         [SerializeField] private bool input_Que_Is_Active = false;
@@ -62,8 +68,12 @@ namespace RK
         [SerializeField] bool que_RT_Input = false;
         [Header("MENU INPUTS")]
         [SerializeField] bool menu_Input = false;
+        [SerializeField] bool openCharacterMenuInput = false;
+        [SerializeField] bool closeMenuInput = false;
 
         [SerializeField] bool change1, change2, change3, change4;
+        [SerializeField] bool interactionUp = false, interactionDown = false;
+        [SerializeField] float interactionScroll;
 
         private void Awake()
         {
@@ -124,24 +134,30 @@ namespace RK
 
                 playerControls.PlayerMovement.Movement.performed += i => movementInput = i.ReadValue<Vector2>();
                 playerControls.PlayerCamera.Movement.performed += i => camera_Input = i.ReadValue<Vector2>();
+                playerControls.PlayerCamera.CameraZoom.performed += i => cameraZoom = i.ReadValue<float>();
 
                 // actions
                 playerControls.PlayerActions.Dodge.performed += i => dodge_Input = true;
                 playerControls.PlayerActions.Jump.performed += i => jump_Input = true;
                 playerControls.PlayerActions.SwitchRightWeapon.performed += i => switch_Right_Weapon_Input = true;
                 playerControls.PlayerActions.SwitchLeftWeapon.performed += i => switch_Left_Weapon_Input = true;
+                playerControls.PlayerActions.Interact.performed += i => interaction_Input = true;
 
 
                 // bumpers
                 playerControls.PlayerActions.RB.performed += i => RB_Input = true;
                 playerControls.PlayerActions.LB.performed += i => LB_Input = true;
+                playerControls.PlayerActions.LB.canceled += i => player.playerNetworkManager.isBlocking.Value = false;
+                playerControls.PlayerActions.Burst.performed += i => Burst_Input = true;
                 // triggers
                 playerControls.PlayerActions.RT.performed += i => RT_Input = true;
                 playerControls.PlayerActions.LT.performed += i => LT_Input = true;
                 playerControls.PlayerActions.HoldRT.performed += i => Hold_RT_Input = true;
                 playerControls.PlayerActions.HoldRT.canceled += i => Hold_RT_Input = false;
-                // menu
-                playerControls.PlayerActions.Menu.performed += i => menu_Input = true;
+                // power ups
+                playerControls.PlayerActions.PowerUps.performed += i => power_Ups_Input = true;
+                playerControls.PlayerActions.PowerUps.canceled += i => power_Ups_Input = false;
+
 
                 // lock on
                 playerControls.PlayerActions.LockOn.performed += i => lockOn_Input = true;
@@ -157,10 +173,17 @@ namespace RK
                 playerControls.PlayerActions.QueRB.performed += i => QueInput(ref que_RB_Input);
                 playerControls.PlayerActions.QueRT.performed += i => QueInput(ref que_RT_Input);
 
+                // menu
+                playerControls.PlayerActions.Menu.performed += i => menu_Input = true;
+                playerControls.PlayerActions.Dodge.performed += i => closeMenuInput = true;
+                playerControls.PlayerActions.OpenCharacterMenu.performed += i => openCharacterMenuInput = true;
+
                 playerControls.CharacterChange.Character1.performed += i => change1 = true;
                 playerControls.CharacterChange.Character2.performed += i => change2 = true;
                 playerControls.CharacterChange.Character3.performed += i => change3 = true;
                 playerControls.CharacterChange.Character4.performed += i => change4 = true;
+
+                playerControls.PlayerActions.InteractionScroll.performed += i => interactionScroll = i.ReadValue<float>();
             }
 
             playerControls.Enable();
@@ -207,10 +230,12 @@ namespace RK
         }
         private void HandleAllInputsFalse()
         {
+            cameraZoom = 0;
             dodge_Input = false;
             jump_Input = false;
             switch_Right_Weapon_Input = false;
             switch_Left_Weapon_Input = false;
+            interaction_Input = false;
             RB_Input = false;
             RT_Input = false;
             LB_Input = false;
@@ -223,9 +248,11 @@ namespace RK
             change2 = false;
             change3 = false;
             change4 = false;
+            Burst_Input = false;
         }
         private void HandleActionInputs()
         {
+            HandleCameraZoomInput();
             HandleLockOnInput();
             HandleLockOnSwitchTargetInput();
             HandlePlayerMovementInput();
@@ -240,9 +267,17 @@ namespace RK
             HandleChargeRTInput();
             HandleSwitchRightWeaponInput();
             HandleSwitchLeftWeaponInput();
+            HandleInteractionInput();
+
             HandleQuedInputs();
 
             HandleCharacterChange();
+            HandleBurstInput();
+
+            HandlePowerUpsInput();
+            HandleCloseUIInput();
+            HandleOpenCharacterMenuUIInput();
+            HandleInteractionScroll();
         }
 
         private void HandleLockOnInput()
@@ -369,6 +404,18 @@ namespace RK
             cameraVertical_Input = camera_Input.y;
             cameraHorizontal_Input = camera_Input.x;
         }
+        private void HandleCameraZoomInput()
+        {
+            if (cameraZoom > 0.8)
+            {
+                PlayerCamera.instance.GetComponentInChildren<CinemachineUserInputZoom>().ZoomInput(1);
+            }
+            else if (cameraZoom < -0.8)
+            {
+                PlayerCamera.instance.GetComponentInChildren<CinemachineUserInputZoom>().ZoomInput(-1);
+            }
+            cameraZoom = 0;
+        }
         // action
         private void HandleDodgeInput()
         {
@@ -430,6 +477,16 @@ namespace RK
                 player.playerCombatManager.PerformWeaponBasedAction(player.playerInventoryManager.currentLeftHandWeapon.oh_LB_Action, player.playerInventoryManager.currentLeftHandWeapon);
             }
         }
+        private void HandleBurstInput()
+        {
+            if (Burst_Input)
+            {
+                Burst_Input = false;
+                if (!player.canAttack)
+                    return;
+                player.entry.playableCharacterActionManager.PerformPCBasedBurstAction(player.playerBurstManager.burst.burstAction, player.playerBurstManager);
+            }
+        }
         private void HandleRTInput()
         {
             if (RT_Input)
@@ -484,6 +541,14 @@ namespace RK
                 player.playerEquipmentManager.SwitchLeftWeapon();
             }
         }
+        private void HandleInteractionInput()
+        {
+            if (interaction_Input)
+            {
+                interaction_Input = false;
+                player.playerInteractionManager.Interact();
+            }
+        }
         private void QueInput(ref bool quedInput)   // 参照を渡すということは、特定のブールを渡すということであり、そのブールの値（真か偽か）を渡すということではない
         {
             // que入力をすべてリセットし、一度に1つだけqueできるようにする
@@ -533,7 +598,48 @@ namespace RK
             if (menu_Input)
             {
                 menu_Input = false;
-                PlayerUIManager.instance.OpenMenuUI(entry);
+                PlayerUIManager.instance.OpenMenuUI();
+            }
+        }
+        private void HandleOpenCharacterMenuUIInput()
+        {
+            if (openCharacterMenuInput)
+            {
+                openCharacterMenuInput = false;
+                PlayerUIManager.instance.playerUIPopUpManager.CloseAllPopUpWindow();
+                PlayerUIManager.instance.CloseAllMenuWindows();
+                PlayerUIManager.instance.playerUICharacterMenuManager.OpenCharacterMenu();
+            }
+        }
+        private void HandleCloseUIInput()
+        {
+            if (closeMenuInput)
+            {
+                closeMenuInput = false;
+                if (PlayerUIManager.instance.menuWindowIsOpen)
+                {
+                    PlayerUIManager.instance.CloseAllMenuWindows();
+                }
+
+            }
+        }
+        private void HandlePowerUpsInput()
+        {
+            if (!power_Ups_Input)
+                return;
+            if (power_Ups_Input)
+            {
+                power_Ups_Input = false;
+                if (player.playerNetworkManager.isPowerUps.Value)
+                {
+                    player.playerNetworkManager.isPowerUps.Value = false;
+                    return;
+                }
+                else
+                {
+                    player.playerNetworkManager.isPowerUps.Value = true;
+                    return;
+                }
             }
         }
         private void HandleCharacterChange()
@@ -565,6 +671,19 @@ namespace RK
             {
                 change4 = false;
                 entry.playableCharacterInventoryManager.ChangeCharacter(3);
+            }
+        }
+        private void HandleInteractionScroll()
+        {
+            if (interactionScroll > 0.8)
+            {
+                interactionScroll = 0;
+                player.playerInteractionManager.ChangeCurrentInteractableSelecting(1);
+            }
+            else if (interactionScroll < -0.8)
+            {
+                interactionScroll = 0;
+                player.playerInteractionManager.ChangeCurrentInteractableSelecting(-1);
             }
         }
     }

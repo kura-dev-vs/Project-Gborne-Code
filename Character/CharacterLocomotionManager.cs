@@ -26,6 +26,12 @@ namespace RK
         public bool canRotate = true;
         public bool canMove = true;
 
+        [Header("Stamina Regeneration")]
+        [SerializeField] float staminaRegenerationAmount = 2;
+        private float staminaRegenerationTimer = 0;
+        private float staminaTickTimer = 0;
+        [SerializeField] float staminaRegenerationDelay = 0.5f;
+
         protected virtual void Awake()
         {
             character = GetComponent<CharacterManager>();
@@ -89,6 +95,63 @@ namespace RK
         public void DisableCanRotate()
         {
             canRotate = false;
+        }
+
+        public void EnableIsRipostable()
+        {
+            if (character.IsOwner)
+            {
+                character.characterNetworkManager.isRipostable.Value = true;
+            }
+        }
+
+        /// <summary>
+        /// スタミナ消費時、回復を行うまでのタイマーをリセットする用
+        /// </summary>
+        /// <param name="previousStaminaAmount"></param>
+        /// <param name="currentStaminaAmount"></param>
+        public virtual void ResetStaminaRegenTimer(float previousStaminaAmount, float currentStaminaAmount)
+        {
+            if (currentStaminaAmount < previousStaminaAmount)
+            {
+                staminaRegenerationTimer = 0;
+            }
+        }
+
+        /// <summary>
+        /// スタミナの回復
+        /// </summary> 
+        public virtual void RegenerateStamina()
+        {
+            if (character == null)
+                return;
+            if (!character.IsOwner)
+                return;
+            if (character.characterNetworkManager.isSprinting.Value)
+                return;
+            if (character.isPerformingAction)
+                return;
+            staminaRegenerationTimer += Time.deltaTime;
+            if (staminaRegenerationTimer >= staminaRegenerationDelay)
+            {
+                if (character.characterNetworkManager.currentStamina.Value < character.characterNetworkManager.maxStamina.Value)
+                {
+                    staminaTickTimer = staminaTickTimer + Time.deltaTime;
+
+                    if (staminaTickTimer >= 0.1)
+                    {
+                        staminaTickTimer = 0;
+                        if (character.characterNetworkManager.isBlocking.Value)
+                        {
+                            character.characterNetworkManager.currentStamina.Value += staminaRegenerationAmount * 0.1f;
+                        }
+                        else
+                        {
+                            character.characterNetworkManager.currentStamina.Value += staminaRegenerationAmount;
+                        }
+                    }
+                }
+            }
         }
     }
 }

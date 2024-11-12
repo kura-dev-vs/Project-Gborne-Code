@@ -60,6 +60,18 @@ namespace RK
             if (footSteps.Length > 0)
                 PlaySoundFX(WorldSoundFXManager.instance.ChooseRandomSFXFromArray(footSteps));
         }
+        public virtual void PlayStanceBreakSoundFX()
+        {
+            audioSource.PlayOneShot(WorldSoundFXManager.instance.stanceBreakSFX);
+        }
+        public virtual void PlayCriticalStrikeSoundFX()
+        {
+            audioSource.PlayOneShot(WorldSoundFXManager.instance.criticalStrikeSFX);
+        }
+        public virtual void PlayBlockSoundFX()
+        {
+
+        }
 
     }
 }

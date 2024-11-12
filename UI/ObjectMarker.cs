@@ -58,7 +58,15 @@ namespace RK
             // カメラ前方ならUI表示、後方なら非表示
             _targetUI.gameObject.SetActive(isFront);
             if (!isFront) return;
+            RaycastHit hitInfo;
 
+            if (Physics.Raycast(cameraTransform.position, targetDir, out hitInfo, Vector3.Distance(targetWorldPos, cameraTransform.position), WorldUtilityManager.instance.GetUILayers()))
+            {
+                _targetUI.gameObject.SetActive(false);
+                return;
+            }
+
+            /*
             // オブジェクトのワールド座標→スクリーン座標変換
             var targetScreenPos = _targetCamera.WorldToScreenPoint(targetWorldPos);
 
@@ -72,6 +80,16 @@ namespace RK
 
             // RectTransformのローカル座標を更新
             _targetUI.localPosition = uiLocalPos;
+            return;
+            */
+
+            _targetUI.localPosition = CameraUtils.WorldToScreenSpaceCamera
+            (
+                worldCamera: PlayerCamera.instance.mainCamera,
+                canvasCamera: UICamera.instance.mainCamera,
+                canvasRectTransform: GetComponent<RectTransform>(),
+                worldPosition: targetWorldPos
+            );
         }
         private void DestroyBar()
         {

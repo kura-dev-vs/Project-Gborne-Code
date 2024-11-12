@@ -17,6 +17,9 @@ namespace RK
         [HideInInspector] public AICharacterNetworkManager aiCharacterNetworkManager;
         [HideInInspector] public AICharacterCombatManager aiCharacterCombatManager;
         [HideInInspector] public AICharacterLocomotionManager aiCharacterLocomotionManager;
+        [HideInInspector] public AICharacterInventoryManager aICharacterInventoryManager;
+        [HideInInspector] public StrikeInteractable strikeInteractable;
+        [HideInInspector] public BackstabInteractable backstabInteractable;
         [Header("Navmesh Agent")]
         public NavMeshAgent navMeshAgent;
         [Header("Current State")]
@@ -34,7 +37,11 @@ namespace RK
             aiCharacterNetworkManager = GetComponent<AICharacterNetworkManager>();
             aiCharacterCombatManager = GetComponent<AICharacterCombatManager>();
             aiCharacterLocomotionManager = GetComponent<AICharacterLocomotionManager>();
+            aICharacterInventoryManager = GetComponent<AICharacterInventoryManager>();
             navMeshAgent = GetComponentInChildren<NavMeshAgent>();
+
+            strikeInteractable = GetComponentInChildren<StrikeInteractable>();
+            backstabInteractable = GetComponentInChildren<BackstabInteractable>();
         }
         protected override void Update()
         {

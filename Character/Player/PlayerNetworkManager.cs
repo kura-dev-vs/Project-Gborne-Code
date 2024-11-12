@@ -24,6 +24,9 @@ namespace RK
         public NetworkVariable<bool> isUsingRightHand = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<bool> isUsingLeftHand = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<int> currentScore = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        [Header("Power Ups")]
+        public NetworkVariable<bool> isPowerUps = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         protected override void Awake()
         {
             base.Awake();
@@ -79,6 +82,38 @@ namespace RK
         {
             WeaponItem newWeapon = WorldItemDatabase.instance.GetWeaponByID(newID);
             player.playerCombatManager.currentWeaponBeingUsed = newWeapon;
+
+            if (player.IsOwner)
+                return;
+
+            if (player.playerCombatManager.currentWeaponBeingUsed != null)
+                player.playerAnimatorManager.UpdateAnimatorController(player.playerCombatManager.currentWeaponBeingUsed.weaponAnimator);
+        }
+        public override void OnIsBlockingChanged(bool oldStatus, bool newStatus)
+        {
+            base.OnIsBlockingChanged(oldStatus, newStatus);
+
+            if (IsOwner)
+            {
+                player.playerStatsManager.blockingPhysicalAbsorption = player.playerCombatManager.currentWeaponBeingUsed.physicalBaseDamageAbsorption;
+                player.playerStatsManager.blockingMagicAbsorption = player.playerCombatManager.currentWeaponBeingUsed.magicBaseDamageAbsorption;
+                player.playerStatsManager.blockingFireAbsorption = player.playerCombatManager.currentWeaponBeingUsed.fireBaseDamageAbsorption;
+                player.playerStatsManager.blockingLightningAbsorption = player.playerCombatManager.currentWeaponBeingUsed.lightningBaseDamageAbsorption;
+                player.playerStatsManager.blockingHolyAbsorption = player.playerCombatManager.currentWeaponBeingUsed.holyBaseDamageAbsorption;
+                player.playerStatsManager.blockingStability = player.playerCombatManager.currentWeaponBeingUsed.stability;
+            }
+        }
+        public void OnInPowerUpsChanged(bool oldStatus, bool newStatus)
+        {
+            if (!isPowerUps.Value)
+            {
+                player.playerEffectsManager.RemoveStaticEffect(WorldCharacterEffectsManager.instance.powerUpsEffect.staticEffectID);
+            }
+            else
+            {
+                StaticCharacterEffect powerUpsEffect = Instantiate(WorldCharacterEffectsManager.instance.powerUpsEffect);
+                player.playerEffectsManager.AddStaticEffect(powerUpsEffect);
+            }
         }
 
         // item actions

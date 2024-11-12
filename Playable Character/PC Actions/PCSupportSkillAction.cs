@@ -22,24 +22,27 @@ namespace RK
 
             if (!playerPerformingAction.playerNetworkManager.isGrounded.Value)
                 return;
+            if (playerPerformingAction.IsOwner)
+                playerPerformingAction.playerNetworkManager.isAttacking.Value = true;
 
             pcSkill.nowRecasting = true;
             PerformSkill(playerPerformingAction, pcSkill);
         }
         private void PerformSkill(PlayerManager playerPerformingAction, PlayerSkillManager pcSkill)
         {
+            PlayableCharacter pc = playerPerformingAction.entry.playableCharacterInventoryManager.currentCharacter;
             if (playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon && playerPerformingAction.isPerformingAction)
             {
                 playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon = false;
 
-                playerPerformingAction.playerAnimatorManager.PlayTargetSkillActionAnimation(AttackType.Skill, skillAnimation, true);
+                playerPerformingAction.playerAnimatorManager.PlayTargetSkillActionAnimation(pc, AttackType.Skill, skillAnimation, true);
 
             }
             // otherwise, if we are not already attacking just perform a regular attack
             else if (!playerPerformingAction.isPerformingAction)
             {
                 playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon = false;
-                playerPerformingAction.playerAnimatorManager.PlayTargetSkillActionAnimation(AttackType.Skill, skillAnimation, true);
+                playerPerformingAction.playerAnimatorManager.PlayTargetSkillActionAnimation(pc, AttackType.Skill, skillAnimation, true);
             }
             else
             {

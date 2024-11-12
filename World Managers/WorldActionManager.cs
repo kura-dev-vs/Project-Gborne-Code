@@ -16,6 +16,7 @@ namespace RK
         [Header("Weapon Item Actions")]
         public WeaponItemAction[] weaponItemActions;
         public PCSkillAction[] pcSkillActions;
+        public PCBurstAction[] pcBurstActions;
         private void Awake()
         {
             if (instance == null)
@@ -39,6 +40,11 @@ namespace RK
             {
                 pcSkillActions[i].skillActionID = i;
             }
+
+            for (int i = 0; i < pcBurstActions.Length; i++)
+            {
+                pcBurstActions[i].burstActionID = i;
+            }
         }
         public WeaponItemAction GetWeaponItemActionByID(int ID)
         {
@@ -49,6 +55,11 @@ namespace RK
         {
             // actionIDとIDが一致するactionを返す
             return pcSkillActions.FirstOrDefault(skillAction => skillAction.skillActionID == ID);
+        }
+        public PCBurstAction GetPCBurstActionByID(int ID)
+        {
+            // actionIDとIDが一致するactionを返す
+            return pcBurstActions.FirstOrDefault(burstAction => burstAction.burstActionID == ID);
         }
     }
 }

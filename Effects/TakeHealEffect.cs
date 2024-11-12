@@ -28,7 +28,8 @@ namespace RK
         [SerializeField] private Color textColor;
         private void Awake()
         {
-            _markerPanel = PlayerUIManager.instance.playerUIHudManager.damageTextParent;
+            if (PlayerUIManager.instance != null)
+                _markerPanel = PlayerUIManager.instance.playerUIHudManager.damageTextParent;
         }
 
         public override void ProcessEffect(CharacterManager character)

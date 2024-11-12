@@ -42,7 +42,9 @@ namespace RK
                     return;
                 contactPoint = other.gameObject.GetComponent<Collider>().ClosestPointOnBounds(transform.position);
 
-                DamageTarget(damageTarget);
+                CheckForBlock(damageTarget);
+                if (!damageTarget.characterNetworkManager.isInvulnerable.Value)
+                    DamageTarget(damageTarget);
             }
 
             if (transform.GetComponent<BulletVFXManager>())
@@ -65,6 +67,8 @@ namespace RK
             damageEffect.magicDamage = magicDamage;
             damageEffect.fireDamage = fireDamage;
             damageEffect.holyDamage = holyDamage;
+            damageEffect.poiseDamage = poiseDamage;
+            damageEffect.stanceDamage = stanceDamage;
             damageEffect.contactPoint = contactPoint;
             damageEffect.angleHitFrom = Vector3.SignedAngle(characterCausingDamage.transform.forward, damageTarget.transform.forward, Vector3.up);
 
@@ -108,6 +112,7 @@ namespace RK
                     damageEffect.fireDamage,
                     damageEffect.holyDamage,
                     damageEffect.poiseDamage,
+                    damageEffect.stanceDamage,
                     damageEffect.angleHitFrom,
                     damageEffect.contactPoint.x,
                     damageEffect.contactPoint.y,
@@ -121,6 +126,7 @@ namespace RK
             damage.fireDamage *= modifier;
             damage.holyDamage *= modifier;
             damage.poiseDamage *= modifier;
+            damage.stanceDamage *= modifier;
         }
     }
 }

@@ -31,10 +31,12 @@ namespace RK
                 contactPoint = other.gameObject.GetComponent<Collider>().ClosestPointOnBounds(transform.position);
                 if (charactersDamaged.Contains(damageTarget))
                     return;
-                charactersDamaged.Add(damageTarget);
+                //charactersDamaged.Add(damageTarget);
                 if (damageTarget.IsOwner)
                 {
-                    DamageTarget(damageTarget);
+                    CheckForBlock(damageTarget);
+                    if (!damageTarget.characterNetworkManager.isInvulnerable.Value)
+                        DamageTarget(damageTarget);
                 }
             }
             if (transform.GetComponent<BulletVFXManager>())
@@ -48,11 +50,16 @@ namespace RK
         }
         protected override void DamageTarget(CharacterManager damageTarget)
         {
+            base.DamageTarget(damageTarget);
+
+            /*
             TakeDamageEffect damageEffect = Instantiate(WorldCharacterEffectsManager.instance.takeDamageEffect);
             damageEffect.magicDamage = magicDamage;
+            damageEffect.poiseDamage = poiseDamage;
             damageEffect.angleHitFrom = Vector3.SignedAngle(durkCharacterManager.transform.forward, damageTarget.transform.forward, Vector3.up);
 
             damageTarget.characterEffectsManager.ProcessInstantEffect(damageEffect);
+            */
         }
     }
 }

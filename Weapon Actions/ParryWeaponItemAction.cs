@@ -1,19 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace RK
 {
     /// <summary>
-    /// 遠距離武器用弱攻撃
-    /// 遠距離武器に強攻撃を作成するかは未定
-    /// 遠距離武器でコンボを行うかも未定なので
+    /// パリィ用
     /// </summary>
-    [CreateAssetMenu(menuName = "Character Actions/Weapon Actions/Light Attack Left Ranged Weapon Action")]
-    public class LightAttackLeftRangedWeaponItemAction : WeaponItemAction
+    [CreateAssetMenu(menuName = "Character Actions/Weapon Actions/Parry Action")]
+    public class ParryWeaponItemAction : WeaponItemAction
     {
-        [SerializeField] string light_Attack_01 = "Left_Ranged_Light_Attack_01";
-
+        [Header("Parry Action")]
+        [SerializeField] string parryAction;
+        [SerializeField] AttackType[] attackType;
         public override void AttemptToPerformAction(PlayerManager playerPerformingAction, WeaponItem weaponPerformingAction)
         {
             base.AttemptToPerformAction(playerPerformingAction, weaponPerformingAction);
@@ -23,6 +23,8 @@ namespace RK
                 return;
             if (!playerPerformingAction.playerNetworkManager.isGrounded.Value)
                 return;
+            if (playerPerformingAction.IsOwner)
+                playerPerformingAction.playerNetworkManager.isAttacking.Value = true;
 
             PerformLightAttack(playerPerformingAction, weaponPerformingAction);
         }
@@ -32,28 +34,21 @@ namespace RK
             if (playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon && playerPerformingAction.isPerformingAction)
             {
                 playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon = false;
-
-                // 最後の攻撃モーションに応じたモーションを行う
-                // 遠距離武器でコンボを行うかは未定なのでどちらにせよ同じモーションを行う
-                playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.LightAttack01, light_Attack_01, true, true, false, false);
-
+                playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(weaponPerformingAction, AttackType.LightAttack01, parryAction, true, true, false);
+                playerPerformingAction.playerCombatManager.DrainStaminaBasedOnAttack();
             }
             // 非モーション中
             else if (!playerPerformingAction.isPerformingAction)
             {
                 playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon = false;
-                playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(AttackType.LightAttack01, light_Attack_01, true, true, false, false);
+                playerPerformingAction.playerAnimatorManager.PlayTargetAttackActionAnimation(weaponPerformingAction, AttackType.LightAttack01, parryAction, true, true, false);
+                playerPerformingAction.playerCombatManager.DrainStaminaBasedOnAttack();
             }
             else
             {
                 // playerPerformingAction.isPerformingAction == true && playerPerformingAction.playerCombatManager.canComboWithMainHandWeapon == false
+            }
 
-            }
-            // ロックオン中はターゲットに向き直る
-            if (playerPerformingAction.playerNetworkManager.isLockedOn.Value)
-            {
-                playerPerformingAction.playerLocomotionManager.RotationToTarget();
-            }
         }
     }
 }

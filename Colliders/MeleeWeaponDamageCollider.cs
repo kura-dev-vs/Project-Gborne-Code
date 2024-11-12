@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.Common;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -57,8 +58,32 @@ namespace RK
                     return;
                 contactPoint = other.gameObject.GetComponent<Collider>().ClosestPointOnBounds(transform.position);
 
-                DamageTarget(damageTarget);
+                CheckForParry(damageTarget);
+                CheckForBlock(damageTarget);
+                if (!damageTarget.characterNetworkManager.isInvulnerable.Value)
+                    DamageTarget(damageTarget);
             }
+        }
+        protected override void CheckForParry(CharacterManager damageTarget)
+        {
+            if (charactersDamaged.Contains(damageTarget))
+                return;
+            if (!characterCausingDamage.characterNetworkManager.isParryable.Value)
+                return;
+            if (!damageTarget.IsOwner)
+                return;
+            if (damageTarget.characterNetworkManager.isParrying.Value)
+            {
+                charactersDamaged.Add(damageTarget);
+                damageTarget.characterNetworkManager.NotifyServerOfParryServerRpc(characterCausingDamage.NetworkObjectId);
+                // parry_land: パリィ成功時のモーション
+                //damageTarget.characterAnimatorManager.PlayTargetActionAnimationInstantly("Parry_Land_01", true);
+            }
+        }
+        protected override void GetBlockingDotValue(CharacterManager damageTarget)
+        {
+            directionFromAttackToDamageTarget = characterCausingDamage.transform.position - damageTarget.transform.position;
+            dotValueFromAttackToDamageTarget = Vector3.Dot(directionFromAttackToDamageTarget, damageTarget.transform.forward);
         }
         protected override void DamageTarget(CharacterManager damageTarget)
         {
@@ -71,6 +96,8 @@ namespace RK
             damageEffect.magicDamage = magicDamage;
             damageEffect.fireDamage = fireDamage;
             damageEffect.holyDamage = holyDamage;
+            damageEffect.poiseDamage = poiseDamage;
+            damageEffect.stanceDamage = stanceDamage;
             damageEffect.contactPoint = contactPoint;
             damageEffect.angleHitFrom = Vector3.SignedAngle(characterCausingDamage.transform.forward, damageTarget.transform.forward, Vector3.up);
 
@@ -125,6 +152,7 @@ namespace RK
                     damageEffect.fireDamage,
                     damageEffect.holyDamage,
                     damageEffect.poiseDamage,
+                    damageEffect.stanceDamage,
                     damageEffect.angleHitFrom,
                     damageEffect.contactPoint.x,
                     damageEffect.contactPoint.y,
@@ -139,6 +167,7 @@ namespace RK
             damage.fireDamage *= modifier;
             damage.holyDamage *= modifier;
             damage.poiseDamage *= modifier;
+            damage.stanceDamage *= modifier;
         }
     }
 }

@@ -14,6 +14,7 @@ namespace RK
     {
         [Header("Attack")]
         [SerializeField] private string attackAnimation;
+        [SerializeField] bool isParryable = true;
         [Header("Combo Action")]
         public AICharacterAttackAction comboAction; // 現在のアクションから派生するコンボアクション
         [Header("Action Values")]
@@ -26,7 +27,11 @@ namespace RK
         public float maximumAttackDistance = 2;
         public void AttemptToPerformAction(AICharacterManager aICharacter)
         {
-            aICharacter.characterAnimatorManager.PlayTargetAttackActionAnimation(attackType, attackAnimation, this);
+            // aiキャラクターの攻撃方式をどうするか再考すべきか
+
+            // aICharacter.characterAnimatorManager.PlayTargetAttackActionAnimation(attackType, attackAnimation, this);
+            aICharacter.characterAnimatorManager.PlayTargetActionAnimation(attackAnimation, this);
+            aICharacter.aiCharacterNetworkManager.isParryable.Value = isParryable;
         }
     }
 }

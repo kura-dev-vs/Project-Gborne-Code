@@ -16,7 +16,8 @@ namespace RK
         public PlayerManager player;
         public NetworkVariable<bool> resetPTFire = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<int> currentPlayableCharacterID = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-        public NetworkList<int> currentPTID = new NetworkList<int>(null, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkList<int> currentPTIDNetworkList = new NetworkList<int>(null, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        [HideInInspector] public int[] currentPTIDForSaveAndLoad = { 1, 2, 0, 0 };
         [HideInInspector] public int count = 0;
         bool pcChangeAllow = true;
         protected virtual void Awake()
@@ -132,6 +133,43 @@ namespace RK
             if (pcSkillAction != null)
             {
                 pcSkillAction.AttemptToPerformSkill(player, pcSkill);
+            }
+            else
+            {
+                Debug.LogError("ACTION IS NULL, CANNOT BE PERFORMED");
+            }
+        }
+
+
+        /// <summary>
+        /// burstAction関連サーバーに通知、クライアントに通知、それを通って非オーナー側が同様のburstActionを行う
+        /// </summary>
+        /// <param name="clientID"></param>
+        /// <param name="burstActionID"></param>
+        /// <param name="burstID"></param>
+        [ServerRpc]
+        public void NotifyTheServerOfBurstActionServerRpc(ulong clientID, int burstActionID, int burstID)
+        {
+            if (IsServer)
+            {
+                NotifyTheServerOfBurstActionClientRpc(clientID, burstActionID, burstID);
+            }
+        }
+        [ClientRpc]
+        private void NotifyTheServerOfBurstActionClientRpc(ulong clientID, int burstActionID, int burstID)
+        {
+            // owner側ではアクションを実行しているのでそれ以外で行わせる
+            if (clientID != NetworkManager.Singleton.LocalClientId)
+            {
+                PerformPCBasedBurstAction(burstActionID, burstID, player.playerBurstManager);
+            }
+        }
+        private void PerformPCBasedBurstAction(int burstActionID, int burstID, PlayerBurstManager pcBurst)
+        {
+            PCBurstAction pcBurstAction = WorldActionManager.instance.GetPCBurstActionByID(burstActionID);
+            if (pcBurstAction != null)
+            {
+                pcBurstAction.AttemptToPerformBurst(player, pcBurst);
             }
             else
             {

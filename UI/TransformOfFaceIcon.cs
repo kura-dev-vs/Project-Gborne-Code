@@ -19,25 +19,27 @@ namespace RK
         [HideInInspector] public PlayableCharacter pc;
         public GameObject alreadyJoinedSymbol;
         [SerializeField] TextMeshProUGUI numberText;
-        [HideInInspector] public int numberInPT;
+        [HideInInspector] public int numberInPT;    // このPCがPTの何番目に入っているか (いない場合は-1)
         public void SetNumberInPT(int number)
         {
             numberText.SetText((number + 1).ToString());
         }
 
-        /*
-        FaceIconボタンを押した場合の挙動
-        PT内に非加入かつ空きがある場合PTに加入させる
-        */
+        /// <summary>
+        /// アイコンを押した際の挙動。
+        /// numberInPTが-1の場合はCheckPTJoinedの値によって仮加入させる
+        /// 既に加入している場合は仮除外する
+        /// これらの挙動は仮加入の段階で、CurrentPTUIのDeployedPTを押してから正式にPTの入れ替えが行われる
+        /// </summary>
         public void ClickFaceIcon()
         {
             if (numberInPT == -1)
             {
-                // PT内に空きがあるか (-1の場合空きがない)
-                int result = PlayerUIManager.instance.playerUISelectableCharacterManager.CheckPTJoined(WorldPlayableCharacterDatabase.instance.NoCharacter.playableCharacterID);
+                // PT内に空きがあるかをNoPlayerのPCIDを渡して確認 (-1の場合空きがない)
+                int result = PlayerUIManager.instance.playerUISelectableCharacterManager.CheckPTJoined(WorldPlayableCharacterDatabase.instance.NoCharacter.pcID);
                 if (result != -1)
                 {
-                    PlayerUIManager.instance.playerUISelectableCharacterManager.ChangePTCharacter(result, pc.playableCharacterID);
+                    PlayerUIManager.instance.playerUISelectableCharacterManager.ChangePTCharacter(result, pc.pcID);
                     SetNumberInPT(result);
                     alreadyJoinedSymbol.SetActive(true);
                     numberInPT = result;
@@ -46,10 +48,15 @@ namespace RK
             else
             {
                 alreadyJoinedSymbol.SetActive(false);
-                PlayerUIManager.instance.playerUISelectableCharacterManager.ChangePTCharacter(numberInPT, WorldPlayableCharacterDatabase.instance.NoCharacter.playableCharacterID);
+                PlayerUIManager.instance.playerUISelectableCharacterManager.ChangePTCharacter(numberInPT, WorldPlayableCharacterDatabase.instance.NoCharacter.pcID);
                 numberInPT = -1;
             }
             PlayerUIManager.instance.playerUISelectableCharacterManager.ComparisonPT();
+        }
+
+        public void ActiveJoinedSymbol()
+        {
+            alreadyJoinedSymbol.SetActive(true);
         }
     }
 }
